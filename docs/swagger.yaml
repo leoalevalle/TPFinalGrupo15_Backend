@@ -1,0 +1,30 @@
+openapi: 3.0.0
+info:
+  title: API Hola Mundo
+  version: 1.0.0
+  description: Documentación de la api
+servers:
+  - url: http://localhost:3000/api
+    description: Servidor de Desarrollo Local
+
+paths:
+  /hello:
+    get:
+      summary: Retorna un saludo de Hola Mundo
+      description: Devuelve un mensaje de bienvenida junto con la fecha y hora actual del servidor.
+      responses:
+        '200':
+          description: Operación exitosa
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "¡Hola Mundo desde el Backend!"
+                  timestamp:
+                    type: string
+                    example: "2026-07-01T04:15:00.000Z"
+        '500':
+          description: Error interno del servidor
