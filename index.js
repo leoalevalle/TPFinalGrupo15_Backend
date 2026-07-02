@@ -1,10 +1,21 @@
 const express = require('express'); 
 const cors = require('cors'); 
 const sequelize = require('./config/database');
+const { cargarDatosDePrueba } = require('./config/seed');
 
+// Importación de rutas
 const helloRoutes = require('./src/routes/hello.routes');
+const conductoraRoute = require('./src/routes/conductora.route');
 
+// === IMPORTACIÓN DE MODELOS PARA LAS RELACIONES ===
 const Usuario = require('./src/models/usuario.model'); 
+const Conductora = require('./src/models/conductora.model');
+const Vehiculo = require('./src/models/vehiculo.model');
+
+// === DEFINICION DE RELACIONES ===
+// conductora ------> vehiculo
+Conductora.hasOne(Vehiculo, { foreignKey: 'idConductoraAsociada', as: 'vehiculoAsignado'});
+Vehiculo.belongsTo(Usuario, { foreignKey: 'idConductoraAsociada', as: 'conductora' });
 
 // === Configuración de Swagger ===
 const swaggerUi = require('swagger-ui-express');
@@ -22,6 +33,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Rutas de la API
 app.use('/api', helloRoutes);
+app.use('/api', conductoraRoute);
  
 // Settings 
 app.set('port', process.env.PORT || 3000); 
@@ -30,28 +42,7 @@ app.set('port', process.env.PORT || 3000);
 sequelize.sync({ force: false, alter: true })
     .then(async () => {
         console.log('Tablas de PostgreSQL sincronizadas');
-
-        // ======  PRUEBA VISUAL ======
-        try {
-            // Buscamos si ya existe la admin para no duplicarla en cada reinicio
-            const existe = await Usuario.findOne({ where: { nomUsuario: 'sofi_admin' } });
-            
-            if (!existe) {
-                await Usuario.create({
-                    nombre: 'Sofía Administradora',
-                    telefono: '123456789',
-                    email: 'sofi@transporte.com',
-                    nomUsuario: 'sofi_admin',
-                    contrasenia: 'admin123', 
-                    rol: 4, // 4 = Admin
-                    sexo: 'Femenino'
-                });
-                console.log('✅ ¡Usuaria de prueba (Admin) creada visualmente en la BD!');
-            }
-        } catch (error) {
-            console.error('❌ Error al crear usuaria de prueba:', error);
-        }
-        // =======================================
+        await cargarDatosDePrueba();
 
         // Obtenemos el puerto asignado en settings de express
         const serverPort = app.get('port');
