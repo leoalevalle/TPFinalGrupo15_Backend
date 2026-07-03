@@ -11,7 +11,7 @@ const Viaje = sequelize.define('Viaje', {
     fecha: { type: DataTypes.DATEONLY, defaultValue: DataTypes.NOW},
     horarioInicio: { type: DataTypes.DATE, allowNull: false},
     horarioFin: { type: DataTypes.DATE, allowNull: false},
-    estadoViaje: { type: DataTypes.ENUM('En camino', 'Finalizado', 'Cancelado en Ruta'),
+    estadoViaje: { type: DataTypes.ENUM('En Camino', 'Finalizado', 'Cancelado en Ruta'),
         defaultValue: 'En Camino'
     },
     monto: { type: DataTypes.FLOAT, allowNull: true}
