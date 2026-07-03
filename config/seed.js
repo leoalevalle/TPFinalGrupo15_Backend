@@ -78,7 +78,7 @@ const cargarDatosDePrueba = async () => {
       modelo: 'Onix',
       color: 'Negro',
       patente: 'AD555BB',
-      activo: false, // 👈 INACTIVO
+      activo: false,
       idConductoraAsociada: chofer2.idUsuario
     });
 
