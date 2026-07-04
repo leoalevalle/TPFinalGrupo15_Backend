@@ -4,20 +4,29 @@ const Usuario = require("../models/usuario.model");
 const sequelize = require("../../config/database");
 
 const transaccionesController = {
-    //POST /api/solicitudes
-    crearSolicitudViaje: async (req, res) => {
-        try{
-            const { idPasajera, origen, destino, zona, cantPasajeros } = req.body;
 
-            const pasajera = await Usuario.findByPk(idPasajera);
-            if(!pasajera){
-                return res.status(404).json({ 
-                    error: "La pasajera no existe o el usuario no tiene rol de Pasajera"})
+    // POST /api/solicitudes
+    crearSolicitudViaje: async (req, res) => {
+        try {
+            
+            const usuarioAutenticado = await Usuario.findByPk(req.userId);
+            if (!usuarioAutenticado || usuarioAutenticado.rol !== 1) {
+                return res.status(403).json({ error: "Acceso denegado. Solo las pasajeras pueden solicitar viajes." });
             }
 
-            if(!pasajera.aprobadaPorAdmin){
+            const { idPasajera, origen, destino, zona, cantPasajeros } = req.body;
+
+            const pasajera = await Usuario.scope('pasajera').findByPk(idPasajera);
+            if (!pasajera) {
+                return res.status(404).json({ 
+                    error: "La pasajera no existe o el usuario no tiene rol de Pasajera"
+                });
+            }
+
+            if (!pasajera.aprobadaPorAdmin) {
                 return res.status(403).json({ 
-                    error: "No autorizado. La pasajera no está aprobada por la Administradora." });
+                    error: "No autorizado. La pasajera no está aprobada por la Administradora." 
+                });
             }
 
             const nuevaSolicitud = await SolicitudViaje.create({
@@ -26,13 +35,19 @@ const transaccionesController = {
 
             return res.status(201).json(nuevaSolicitud);
         } catch (error) {
-            return res.status(500).json({ error: error.message});
+            return res.status(500).json({ error: error.message });
         }
     },
 
-    //PUT /api/solicitudes/:id/cancelar
+    // PUT /api/solicitudes/:id/cancelar 
     cancelarSolicitud: async (req, res) => {
         try {
+            
+            const usuarioAutenticado = await Usuario.findByPk(req.userId);
+            if (!usuarioAutenticado || (usuarioAutenticado.rol !== 1 && usuarioAutenticado.rol !== 3)) {
+                return res.status(403).json({ error: "Acceso denegado. No autorizado para cancelar solicitudes." });
+            }
+
             const { id } = req.params;
             const solicitud = await SolicitudViaje.findByPk(id);
 
@@ -54,9 +69,14 @@ const transaccionesController = {
         }
     },
 
-    //GET /api/operadora/solicitudes
+    // GET /api/operadora/solicitudes 
     listarSolicitudesPendientes: async (req, res) => {
         try {
+            const usuarioAutenticado = await Usuario.findByPk(req.userId);
+            if (!usuarioAutenticado || usuarioAutenticado.rol !== 3) {
+                return res.status(403).json({ error: "Acceso denegado. Endpoint exclusivo para Operadoras." });
+            }
+
             const pendientes = await SolicitudViaje.findAll({ where: { estado: 'Pendiente' } });
             return res.json(pendientes);
         } catch (error) {
@@ -64,12 +84,17 @@ const transaccionesController = {
         }
     },
 
-    //GET /api/operadora/conductoras-zona
+    // GET /api/operadora/conductoras-zona 
     consultarConductorasDisponibles: async (req, res) => {
         try {
+            const usuarioAutenticado = await Usuario.findByPk(req.userId);
+            if (!usuarioAutenticado || usuarioAutenticado.rol !== 3) {
+                return res.status(403).json({ error: "Acceso denegado. Endpoint exclusivo para Operadoras." });
+            }
+
             const { zona } = req.query; 
 
-            const conductoras = await Usuario.findAll({
+            const conductoras = await Usuario.scope('conductora').findAll({
                 where: {
                     enJornada: true,
                     disponible: true,
@@ -82,13 +107,23 @@ const transaccionesController = {
         }
     },
 
-    //PUT /api/operadora/asignar-propuesta
+    // PUT /api/operadora/asignar-propuesta 
     seleccionarConductora: async (req, res) => {
         try {
+            const usuarioAutenticado = await Usuario.findByPk(req.userId);
+            if (!usuarioAutenticado || usuarioAutenticado.rol !== 3) {
+                return res.status(403).json({ error: "Acceso denegado. Endpoint exclusivo para Operadoras." });
+            }
+
             const { idSolicitud, idConductora } = req.body;
 
             const solicitud = await SolicitudViaje.findByPk(idSolicitud);
             if (!solicitud) return res.status(404).json({ error: "Solicitud no encontrada" });
+
+            const conductora = await Usuario.scope('conductora').findByPk(idConductora);
+            if (!conductora) {
+                return res.status(404).json({ error: "La conductora seleccionada no es válida o no existe." });
+            }
 
             solicitud.idConductoraAsignada = idConductora;
             solicitud.estado = 'Propuesta';
@@ -100,9 +135,14 @@ const transaccionesController = {
         }
     },
 
-    //PUT /api/conductoras/solicitudes/:id/responder
+    // PUT /api/conductoras/solicitudes/:id/responder
     responderPropuesta: async (req, res) => {
         try {
+            const usuarioAutenticado = await Usuario.findByPk(req.userId);
+            if (!usuarioAutenticado || usuarioAutenticado.rol !== 2) {
+                return res.status(403).json({ error: "Acceso denegado. Solo las conductoras pueden responder propuestas." });
+            }
+
             const { id } = req.params;
             const { aceptar } = req.body;
 
@@ -124,8 +164,13 @@ const transaccionesController = {
         }
     },
 
-    //POST /api/viajes
+    // POST /api/viajes
     registrarViaje: async (req, res) => {
+        const usuarioAutenticado = await Usuario.findByPk(req.userId);
+        if (!usuarioAutenticado || usuarioAutenticado.rol !== 3) {
+            return res.status(403).json({ error: "Acceso denegado. Solo las operadoras pueden registrar e iniciar viajes." });
+        }
+
         const t = await sequelize.transaction();
         
         try {
@@ -137,7 +182,7 @@ const transaccionesController = {
                 return res.status(400).json({ error: "La solicitud debe ser previamente Aceptada por la conductora." });
             }
 
-            await Usuario.update(
+            await Usuario.scope('conductora').update(
                 { disponible: false },
                 { where: { idUsuario: solicitud.idConductoraAsignada }, transaction: t }
             );
@@ -160,10 +205,14 @@ const transaccionesController = {
         }
     },
 
-
-    //PUT /api/viajes/:id/finalizar
+    // PUT /api/viajes/:id/finalizar 
     informarFinViaje: async (req, res) => {
         try {
+            const usuarioAutenticado = await Usuario.findByPk(req.userId);
+            if (!usuarioAutenticado || (usuarioAutenticado.rol !== 2 && usuarioAutenticado.rol !== 3)) {
+                return res.status(403).json({ error: "Acceso denegado. No autorizado para finalizar viajes." });
+            }
+
             const { id } = req.params;
             const viaje = await Viaje.findByPk(id);
 
@@ -178,7 +227,7 @@ const transaccionesController = {
 
             await viaje.save();
 
-            await Usuario.update(
+            await Usuario.scope('conductora').update(
                 { disponible: true },
                 { where: { idUsuario: viaje.idConductora } }
             );
