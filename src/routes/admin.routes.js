@@ -8,5 +8,8 @@ router.put('/usuarios/:id/estado', adminCtrl.cambiarEstadoLogicoUsuario);
 router.put('/pasajeras/:id/evaluar', adminCtrl.evaluarRegistroPasajera);
 // Ruta para evaluar y habilitar a una conductora
 router.put('/conductoras/:id/evaluar', adminCtrl.evaluarRegistroConductora);
+// Rutas para la gestión de vehículos
+router.put('/vehiculos/:id/estado', adminCtrl.cambiarEstadoLogicoVehiculo);
+router.put('/conductoras/:idConductora/cambiar-vehiculo', adminCtrl.gestionarCambioVehiculo);
 
 module.exports = router;

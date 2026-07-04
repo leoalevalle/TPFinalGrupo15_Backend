@@ -1,4 +1,5 @@
 const Usuario = require('../models/usuario.model');
+const Vehiculo = require('../models/vehiculo.model');
 
 const adminCtrl = {};
 
@@ -195,6 +196,118 @@ adminCtrl.evaluarRegistroConductora = async (req, res) => {
         res.status(400).json({
             status: '0',
             msg: 'Error al evaluar el registro de la conductora',
+            error: error.message
+        });
+    }
+};
+// PUT /api/admin/vehiculos/:id/estado
+adminCtrl.cambiarEstadoLogicoVehiculo = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { activo } = req.body; // Se espera true o false
+
+        if (activo === undefined || typeof activo !== 'boolean') {
+            return res.status(400).json({
+                status: '0',
+                msg: 'El campo "activo" es requerido y debe ser booleano'
+            });
+        }
+
+        const vehiculo = await Vehiculo.findByPk(id);
+
+        if (!vehiculo) {
+            return res.status(404).json({
+                status: '0',
+                msg: 'Vehículo no encontrado'
+            });
+        }
+
+        await vehiculo.update({ activo });
+        const accion = activo ? 'activado' : 'dado de baja lógicamente';
+
+        res.status(200).json({
+            status: '1',
+            msg: `Vehículo ${accion} correctamente`,
+            data: vehiculo
+        });
+    } catch (error) {
+        res.status(400).json({
+            status: '0',
+            msg: 'Error al cambiar el estado del vehículo',
+            error: error.message
+        });
+    }
+};
+
+// PUT /api/admin/conductoras/:idConductora/cambiar-vehiculo
+adminCtrl.gestionarCambioVehiculo = async (req, res) => {
+    try {
+        const { idConductora } = req.params;
+        const { idVehiculo, autorizar } = req.body; // idVehiculo a asignar y autorizar (true/false)
+
+        if (!idVehiculo || autorizar === undefined || typeof autorizar !== 'boolean') {
+            return res.status(400).json({
+                status: '0',
+                msg: 'Los campos idVehiculo y autorizar (booleano) son requeridos'
+            });
+        }
+
+        // 1. Validar que la conductora exista y tenga el rol correcto
+        const conductora = await Usuario.findByPk(idConductora);
+        if (!conductora || conductora.rol !== 2) {
+            return res.status(400).json({
+                status: '0',
+                msg: 'La usuaria no existe o no corresponde al rol de Conductora'
+            });
+        }
+
+        // 2. Validar que el vehículo exista y esté activo
+        const vehiculo = await Vehiculo.findByPk(idVehiculo);
+        if (!vehiculo) {
+            return res.status(404).json({
+                status: '0',
+                msg: 'El vehículo que intenta asignar no existe'
+            });
+        }
+
+        if (!vehiculo.activo) {
+            return res.status(400).json({
+                status: '0',
+                msg: 'No se puede asignar este vehículo porque está dado de baja o inactivo'
+            });
+        }
+
+        // 3. Procesar la autorización de la Administradora
+        if (!autorizar) {
+            return res.status(200).json({
+                status: '1',
+                msg: 'El cambio de vehículo fue rechazado por la Administradora. El auto sigue libre.'
+            });
+        }
+
+        // 4. Lógica de negocio: Desvincular el vehículo anterior si esa conductora ya tenía uno
+        await Vehiculo.update(
+            { idConductoraAsociada: null },
+            { where: { idConductoraAsociada: idConductora } }
+        );
+
+        // 5. Vincular el nuevo vehículo a la conductora
+        await vehiculo.update({ idConductoraAsociada: idConductora });
+
+        res.status(200).json({
+            status: '1',
+            msg: `Vehículo asignado exitosamente a la conductora ${conductora.nombre}`,
+            data: {
+                idConductora: conductora.idUsuario,
+                nombreConductora: conductora.nombre,
+                idVehiculo: vehiculo.idVehiculo,
+                patente: vehiculo.patente
+            }
+        });
+    } catch (error) {
+        res.status(400).json({
+            status: '0',
+            msg: 'Error al gestionar el cambio de vehículo',
             error: error.message
         });
     }

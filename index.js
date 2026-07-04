@@ -7,6 +7,7 @@ const authRoutes = require('./src/routes/auth.routes');
 const adminRoutes = require('./src/routes/admin.routes');
 
 const Usuario = require('./src/models/usuario.model'); 
+const Vehiculo = require('./src/models/vehiculo.model');
 
 // === Configuración de Swagger ===
 const swaggerUi = require('swagger-ui-express');
@@ -83,6 +84,19 @@ sequelize.sync({ force: false, alter: true })
                     activo: false // Inicia deshabilitada hasta que la Admin apruebe sus papeles
                 });
                 console.log('✅ ¡Conductora de prueba (Valentina) creada en la BD!');
+            }
+            // Vehículo de prueba
+            const existeVehiculo = await Vehiculo.findOne({ where: { patente: 'ABC123' } });
+            if (!existeVehiculo) {
+                await Vehiculo.create({
+                    marca: 'Fiat',
+                    modelo: 'Cronos',
+                    color: 'Blanco',
+                    patente: 'ABC123',
+                    activo: true,
+                    idConductoraAsociada: null // Inicia libre sin conductora
+                });
+                console.log('✅ ¡Vehículo de prueba (Fiat Cronos) creado en la BD!');
             }
         } catch (error) {
             console.error('❌ Error al crear usuaria de prueba:', error);
