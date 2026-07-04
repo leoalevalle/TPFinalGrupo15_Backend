@@ -76,7 +76,7 @@ const Usuario = sequelize.define('Usuario', {
     aprobadaPorAdmin: {
         type: DataTypes.BOOLEAN,
         allowNull: true, // Debe permitir NULL porque operadoras y choferes no lo usan
-        defaultValue: false // Por defecto inicia sin aprobar hasta filtro de seguridad
+        defaultValue: false 
     },
 
     // Atributos de Conductora (Rol 2)
