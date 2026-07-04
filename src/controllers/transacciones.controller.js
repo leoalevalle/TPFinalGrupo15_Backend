@@ -1,15 +1,15 @@
 const SolicitudViaje = require("../models/solicitud.model");
 const Viaje = require("../models/viaje.model");
 const Usuario = require("../models/usuario.model");
+const sequelize = require("../../config/database");
 
 const transaccionesController = {
-
     //POST /api/solicitudes
     crearSolicitudViaje: async (req, res) => {
         try{
             const { idPasajera, origen, destino, zona, cantPasajeros } = req.body;
 
-            const pasajera = await Usuario.scope('pasajera').findByPk(idPasajera);
+            const pasajera = await Usuario.findByPk(idPasajera);
             if(!pasajera){
                 return res.status(404).json({ 
                     error: "La pasajera no existe o el usuario no tiene rol de Pasajera"})
@@ -69,7 +69,7 @@ const transaccionesController = {
         try {
             const { zona } = req.query; 
 
-            const conductoras = await Usuario.scope('conductora').findAll({
+            const conductoras = await Usuario.findAll({
                 where: {
                     enJornada: true,
                     disponible: true,
@@ -137,7 +137,7 @@ const transaccionesController = {
                 return res.status(400).json({ error: "La solicitud debe ser previamente Aceptada por la conductora." });
             }
 
-            await Usuario.scope('conductora').update(
+            await Usuario.update(
                 { disponible: false },
                 { where: { idUsuario: solicitud.idConductoraAsignada }, transaction: t }
             );
@@ -149,7 +149,7 @@ const transaccionesController = {
                 idOperadoraAsignadora: idOperadora,
                 patenteVehiculoUtilizado: patenteVehiculo,
                 horarioInicio: new Date(),
-                estadoViaje: 'En camino' 
+                estadoViaje: 'En Camino' 
             }, { transaction: t });
 
             await t.commit();
@@ -178,7 +178,7 @@ const transaccionesController = {
 
             await viaje.save();
 
-            await Usuario.scope('conductora').update(
+            await Usuario.update(
                 { disponible: true },
                 { where: { idUsuario: viaje.idConductora } }
             );
