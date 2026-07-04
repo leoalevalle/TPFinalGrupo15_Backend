@@ -3,6 +3,7 @@ const cors = require('cors');
 const sequelize = require('./config/database');
 
 const helloRoutes = require('./src/routes/hello.routes');
+const authRoutes = require('./src/routes/auth.routes');
 
 const Usuario = require('./src/models/usuario.model'); 
 
@@ -22,6 +23,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Rutas de la API
 app.use('/api', helloRoutes);
+app.use('/api/auth', authRoutes);
  
 // Settings 
 app.set('port', process.env.PORT || 3000); 
