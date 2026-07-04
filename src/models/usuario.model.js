@@ -116,4 +116,12 @@ const Usuario = sequelize.define('Usuario', {
     }
 });
 
+// ====== RELACIONES DE ASOCIACIÓN ======
+const Vehiculo = require('./vehiculo.model'); 
+
+// Una Conductora (Usuario) tiene un Vehículo asignado
+Usuario.hasOne(Vehiculo, { foreignKey: 'idConductoraAsociada', as: 'vehiculo' });
+// Un Vehículo pertenece a una Conductora
+Vehiculo.belongsTo(Usuario, { foreignKey: 'idConductoraAsociada', as: 'conductora' });
+
 module.exports = Usuario;
