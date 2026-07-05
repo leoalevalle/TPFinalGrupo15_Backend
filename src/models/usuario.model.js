@@ -76,7 +76,7 @@ const Usuario = sequelize.define('Usuario', {
     aprobadaPorAdmin: {
         type: DataTypes.BOOLEAN,
         allowNull: true, // Debe permitir NULL porque operadoras y choferes no lo usan
-        defaultValue: false // Por defecto inicia sin aprobar hasta filtro de seguridad
+        defaultValue: false 
     },
 
     // Atributos de Conductora (Rol 2)
@@ -115,5 +115,13 @@ const Usuario = sequelize.define('Usuario', {
         }
     }
 });
+
+// ====== RELACIONES DE ASOCIACIÓN ======
+const Vehiculo = require('./vehiculo.model'); 
+
+// Una Conductora (Usuario) tiene un Vehículo asignado
+Usuario.hasOne(Vehiculo, { foreignKey: 'idConductoraAsociada', as: 'vehiculo' });
+// Un Vehículo pertenece a una Conductora
+Vehiculo.belongsTo(Usuario, { foreignKey: 'idConductoraAsociada', as: 'conductora' });
 
 module.exports = Usuario;

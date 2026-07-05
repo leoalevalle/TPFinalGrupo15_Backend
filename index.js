@@ -4,8 +4,11 @@ const cors = require('cors');
 const sequelize = require('./config/database');
 
 const helloRoutes = require('./src/routes/hello.routes');
+const authRoutes = require('./src/routes/auth.routes');
+const adminRoutes = require('./src/routes/admin.routes');
 
 const Usuario = require('./src/models/usuario.model'); 
+const Vehiculo = require('./src/models/vehiculo.model');
 
 // === Configuración de Swagger ===
 const swaggerUi = require('swagger-ui-express');
@@ -23,6 +26,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Rutas de la API
 app.use('/api', helloRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Settings 
 app.set('port', process.env.PORT || 3000); 
@@ -48,6 +53,51 @@ sequelize.sync({ force: false, alter: true })
                     sexo: 'Femenino'
                 });
                 console.log('✅ ¡Usuaria de prueba (Admin) creada visualmente en la BD!');
+            }
+
+            // Pasajera de prueba para el filtro de seguridad
+            const existePasajera = await Usuario.findOne({ where: { nomUsuario: 'ana_pasajera' } });
+            if (!existePasajera) {
+                await Usuario.create({
+                    nombre: 'Ana López',
+                    telefono: '987654321',
+                    email: 'ana@mail.com',
+                    nomUsuario: 'ana_pasajera',
+                    contrasenia: 'ana123',
+                    rol: 1, // 1 = Pasajera
+                    sexo: 'Femenino',
+                    aprobadaPorAdmin: false // Arranca bloqueada hasta que la admin la evalúe
+                });
+                console.log('✅ ¡Pasajera de prueba (Ana) creada en la BD!');
+            }
+
+            // Conductora de prueba para el filtro de seguridad
+            const existeConductora = await Usuario.findOne({ where: { nomUsuario: 'valen_chofer' } });
+            if (!existeConductora) {
+                await Usuario.create({
+                    nombre: 'Valentina Gómez',
+                    telefono: '555444333',
+                    email: 'valen@mail.com',
+                    nomUsuario: 'valen_chofer',
+                    contrasenia: 'valen123',
+                    rol: 2, // 2 = Conductora
+                    sexo: 'Femenino',
+                    activo: false // Inicia deshabilitada hasta que la Admin apruebe sus papeles
+                });
+                console.log('✅ ¡Conductora de prueba (Valentina) creada en la BD!');
+            }
+            // Vehículo de prueba
+            const existeVehiculo = await Vehiculo.findOne({ where: { patente: 'ABC123' } });
+            if (!existeVehiculo) {
+                await Vehiculo.create({
+                    marca: 'Fiat',
+                    modelo: 'Cronos',
+                    color: 'Blanco',
+                    patente: 'ABC123',
+                    activo: true,
+                    idConductoraAsociada: null // Inicia libre sin conductora
+                });
+                console.log('✅ ¡Vehículo de prueba (Fiat Cronos) creado en la BD!');
             }
         } catch (error) {
             console.error('❌ Error al crear usuaria de prueba:', error);
