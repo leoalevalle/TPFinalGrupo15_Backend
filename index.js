@@ -2,13 +2,24 @@ require('dotenv').config();
 const express = require('express'); 
 const cors = require('cors'); 
 const sequelize = require('./config/database');
+const { cargarDatosDePrueba } = require('./config/seed');
 
+// Importación de rutas
 const helloRoutes = require('./src/routes/hello.routes');
 const authRoutes = require('./src/routes/auth.routes');
 const adminRoutes = require('./src/routes/admin.routes');
+const conductoraRoute = require('./src/routes/conductora.route');
 
+// === IMPORTACIÓN DE MODELOS PARA LAS RELACIONES ===
 const Usuario = require('./src/models/usuario.model'); 
 const Vehiculo = require('./src/models/vehiculo.model');
+const Conductora = require('./src/models/conductora.model');
+const Vehiculo = require('./src/models/vehiculo.model');
+
+// === DEFINICION DE RELACIONES ===
+// conductora ------> vehiculo
+Conductora.hasOne(Vehiculo, { foreignKey: 'idConductoraAsociada', as: 'vehiculoAsignado'});
+Vehiculo.belongsTo(Usuario, { foreignKey: 'idConductoraAsociada', as: 'conductora' });
 
 // === Configuración de Swagger ===
 const swaggerUi = require('swagger-ui-express');
@@ -29,6 +40,8 @@ app.use('/api', helloRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 
+app.use('/api', conductoraRoute);
+ 
 // Settings 
 app.set('port', process.env.PORT || 3000); 
 
@@ -103,6 +116,7 @@ sequelize.sync({ force: false, alter: true })
             console.error('❌ Error al crear usuaria de prueba:', error);
         }
         // =======================================
+        await cargarDatosDePrueba();
 
         // Obtenemos el puerto asignado en settings de express
         const serverPort = app.get('port');
