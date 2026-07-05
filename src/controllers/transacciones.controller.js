@@ -214,14 +214,15 @@ const transaccionesController = {
             }
 
             const { id } = req.params;
-            const viaje = await Viaje.findByPk(id);
 
+           
+            const viaje = await Viaje.findByPk(id);
             if (!viaje) return res.status(404).json({ error: "Viaje no encontrado" });
 
             const ahora = new Date();
             viaje.horarioFin = ahora;
             viaje.estadoViaje = 'Finalizado';
-
+            
             const segundos = Math.abs(ahora - new Date(viaje.horarioInicio)) / 1000;
             viaje.monto = parseFloat((400 + (segundos * 1.5)).toFixed(2));
 
