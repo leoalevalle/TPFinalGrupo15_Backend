@@ -14,12 +14,12 @@ const conductoraRoute = require('./src/routes/conductora.route');
 const Usuario = require('./src/models/usuario.model'); 
 const Vehiculo = require('./src/models/vehiculo.model');
 const Conductora = require('./src/models/conductora.model');
-const Vehiculo = require('./src/models/vehiculo.model');
+//const Vehiculo = require('./src/models/vehiculo.model');
 
 // === DEFINICION DE RELACIONES ===
 // conductora ------> vehiculo
 Conductora.hasOne(Vehiculo, { foreignKey: 'idConductoraAsociada', as: 'vehiculoAsignado'});
-Vehiculo.belongsTo(Usuario, { foreignKey: 'idConductoraAsociada', as: 'conductora' });
+Vehiculo.belongsTo(Usuario, { foreignKey: 'idConductoraAsociada', as: 'datosConductora' });
 
 // === Configuración de Swagger ===
 const swaggerUi = require('swagger-ui-express');
