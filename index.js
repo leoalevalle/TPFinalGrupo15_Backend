@@ -23,14 +23,6 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Rutas de la API
 app.use('/api', helloRoutes);
- 
-// 1. Buscá los imports de rutas arriba e incluí el tuyo:
-const transaccionesRoutes = require('./src/routes/transacciones.route.js');
-
-// 2. Buscá la sección de "// Rutas de la API" e inyectalo abajo de helloRoutes:
-app.use('/api', helloRoutes);
-app.use('/api', transaccionesRoutes); // <-- Agregá esta línea acá
-
 
 // Settings 
 app.set('port', process.env.PORT || 3000); 
