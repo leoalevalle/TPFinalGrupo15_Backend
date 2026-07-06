@@ -1,5 +1,7 @@
 const Usuario = require('../models/usuario.model');
 const Vehiculo = require('../models/vehiculo.model');
+const Viaje = require('../models/viaje.model');
+const {Op, fn, col}= require('sequelize');
 
 const adminCtrl = {};
 
@@ -308,6 +310,71 @@ adminCtrl.gestionarCambioVehiculo = async (req, res) => {
         res.status(400).json({
             status: '0',
             msg: 'Error al gestionar el cambio de vehículo',
+            error: error.message
+        });
+    }
+};
+//=================================================================================================
+// GET /api/admin/informe-mensual?mes=07&anio=2026
+adminCtrl.obtenerInformeMensual = async (req, res) => {
+    try {
+        // 1. Obtener mes y año por Query Params. Si no vienen, usamos el mes actual.
+        const fechaActual = new Date();
+        const mes = req.query.mes ? parseInt(req.query.mes) : fechaActual.getMonth() + 1;
+        const anio = req.query.anio ? parseInt(req.query.anio) : fechaActual.getFullYear();
+
+        // 2. Formatear mes con dos dígitos (ej: 7 -> "07")
+        const mesFormateado = mes < 10 ? `0${mes}` : `${mes}`;
+
+        // 3. Calcular el último día del mes de forma dinámica
+        const ultimoDia = new Date(anio, mes, 0).getDate();
+        const ultimoDiaFormateado = ultimoDia < 10 ? `0${ultimoDia}` : `${ultimoDia}`;
+
+        // 4. formato YYYY-MM-DD para el DATEONLY 
+        const fechaInicioStr = `${anio}-${mesFormateado}-01`;
+        const fechaFinStr = `${anio}-${mesFormateado}-${ultimoDiaFormateado}`;
+
+        // 5. Consulta analítica usando operadores de rango 
+        const metricas = await Viaje.findAll({
+            where: {
+                fecha: {
+                    [Op.gte]: fechaInicioStr, 
+                    [Op.lte]: fechaFinStr     
+                }
+            },
+            attributes: [
+                // Contamos cuántos viajes tienen estado 'Finalizado'
+                [fn('COUNT', fn('NULLIF', col('estadoViaje'), 'Cancelado en Ruta')), 'serviciosCompletados'],
+                
+                // Contamos cuántos viajes fueron cancelados
+                [fn('COUNT', fn('NULLIF', col('estadoViaje'), 'Finalizado')), 'serviciosCancelados'],
+                
+                // Sumamos la recaudación total de la columna 'monto'
+                [fn('SUM', col('monto')), 'recaudacionTotal']
+            ],
+            raw: true
+        });
+
+        const resultado = metricas[0] || {};
+        
+        // 6. respuesta final
+        res.status(200).json({
+            status: '1',
+            msg: `Informe analítico generado con éxito para el período ${mesFormateado}/${anio}`,
+            data: {
+                mes: mesFormateado,
+                anio,
+                recaudacionTotal: parseFloat(resultado.recaudacionTotal || 0).toFixed(2),
+                serviciosCompletados: parseInt(resultado.serviciosCompletados || 0),
+                serviciosCancelados: parseInt(resultado.serviciosCancelados || 0),
+                totalViajesPeriodo: parseInt(resultado.serviciosCompletados || 0) + parseInt(resultado.serviciosCancelados || 0)
+            }
+        });
+
+    } catch (error) {
+        res.status(400).json({
+            status: '0',
+            msg: 'Error al procesar el informe analítico de viajes',
             error: error.message
         });
     }

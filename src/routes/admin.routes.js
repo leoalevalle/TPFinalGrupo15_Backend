@@ -11,5 +11,7 @@ router.put('/conductoras/:id/evaluar', adminCtrl.evaluarRegistroConductora);
 // Rutas para la gestión de vehículos
 router.put('/vehiculos/:id/estado', adminCtrl.cambiarEstadoLogicoVehiculo);
 router.put('/conductoras/:idConductora/cambiar-vehiculo', adminCtrl.gestionarCambioVehiculo);
+// Ruta para obtener informe mensual
+router.get('/informe-mensual', adminCtrl.obtenerInformeMensual);
 
 module.exports = router;
