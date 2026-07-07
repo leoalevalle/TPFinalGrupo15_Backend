@@ -81,7 +81,7 @@ sequelize.sync({ force: true, alter: true })
                     contrasenia: 'ana123',
                     rol: 1, // 1 = Pasajera
                     sexo: 'Femenino',
-                    aprobadaPorAdmin: false // Arranca bloqueada hasta que la admin la evalúe
+                    aprobadaPorAdmin: true // Arranca bloqueada hasta que la admin la evalúe
                 });
                 console.log('✅ ¡Pasajera de prueba (Ana) creada en la BD!');
             }
@@ -97,7 +97,7 @@ sequelize.sync({ force: true, alter: true })
                     contrasenia: 'valen123',
                     rol: 2, // 2 = Conductora
                     sexo: 'Femenino',
-                    activo: false // Inicia deshabilitada hasta que la Admin apruebe sus papeles
+                    activo: true // Inicia deshabilitada hasta que la Admin apruebe sus papeles
                 });
                 console.log('✅ ¡Conductora de prueba (Valentina) creada en la BD!');
             }
@@ -114,6 +114,17 @@ sequelize.sync({ force: true, alter: true })
                 });
                 console.log('✅ ¡Vehículo de prueba (Fiat Cronos) creado en la BD!');
             }
+            await Usuario.create({
+                    nombre: 'Paola Oper',
+                    telefono: '987654311',
+                    email: 'pao@mail.com',
+                    nomUsuario: 'pao_oper',
+                    contrasenia: 'pao123',
+                    rol: 3, // operadora
+                    sexo: 'Femenino',
+                    aprobadaPorAdmin: true // Arranca bloqueada hasta que la admin la evalúe
+                });
+                console.log('✅ ¡Pasajera de prueba (Ana) creada en la BD!');
         } catch (error) {
             console.error('❌ Error al crear usuaria de prueba:', error);
         }
