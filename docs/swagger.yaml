@@ -16,28 +16,66 @@ paths:
       summary: Iniciar jornada de una conductora
       tags:
         - Conductoras
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idConductora:
+                  type: integer
+                  example: 3
       responses:
         200:
           description: Jornada iniciada con éxito.
         400:
-          description: Error en la petición o datos inválidos.
+          description: Faltan campos requeridos en el body.
+        500:
+          description: Error interno del servidor.
 
   /conductoras/jornada/fin:
     put:
       summary: Finalizar jornada de una conductora
       tags:
         - Conductoras
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idConductora:
+                  type: integer
+                  example: 3
       responses:
         200:
           description: Jornada finalizada con éxito.
         400:
-          description: Error al finalizar la jornada.
+          description: Faltan campos requeridos en el body.
 
   /conductoras/cambio-vehiculo:
     post:
       summary: Solicitar un cambio de vehículo
       tags:
         - Conductoras
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idConductora:
+                  type: integer
+                  example: 3
+                idVehiculoNuevo:
+                  type: integer
+                  example: 2
+                motivo:
+                  type: string
+                  example: "El vehículo actual tiene una falla en el embrague."
       responses:
         201:
           description: Solicitud de cambio creada con éxito.
@@ -52,10 +90,11 @@ paths:
       parameters:
         - name: enJornada
           in: query
-          description: Filtrar conductoras que estén activas en jornada (true/false)
+          description: Filtrar conductoras activas (true/false)
           required: false
           schema:
             type: string
+            example: "true"
       responses:
         200:
           description: Listado de conductoras obtenido con éxito.
@@ -72,6 +111,7 @@ paths:
           description: ID numérico de la conductora
           schema:
             type: integer
+            example: 3
       responses:
         200:
           description: Datos de la conductora devueltos con éxito.
@@ -86,6 +126,25 @@ paths:
       summary: Dar de alta un nuevo vehículo
       tags:
         - Admin - Vehículos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                marca:
+                  type: string
+                  example: "Fiat"
+                modelo:
+                  type: string
+                  example: "Cronos"
+                color:
+                  type: string
+                  example: "Blanco"
+                patente:
+                  type: string
+                  example: "AF123JK"
       responses:
         201:
           description: Vehículo creado correctamente.
@@ -111,6 +170,7 @@ paths:
           description: ID del vehículo a buscar
           schema:
             type: integer
+            example: 1
       responses:
         200:
           description: Datos del vehículo devueltos.
@@ -119,7 +179,7 @@ paths:
 
   /admin/vehiculos/{id}/estado:
     put:
-      summary: Cambiar el estado lógico de un vehículo (Activar/Desactivar/Baja)
+      summary: Cambiar el estado lógico de un vehículo
       tags:
         - Admin - Vehículos
       parameters:
@@ -129,6 +189,17 @@ paths:
           description: ID del vehículo a modificar
           schema:
             type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                activo:
+                  type: boolean
+                  example: false
       responses:
         200:
           description: Estado del vehículo actualizado con éxito.
@@ -140,6 +211,19 @@ paths:
       summary: Gestionar (Aprobar o Rechazar) una solicitud de cambio de vehículo
       tags:
         - Admin - Vehículos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idSolicitud:
+                  type: integer
+                  example: 10
+                aprobado:
+                  type: boolean
+                  example: true
       responses:
         200:
           description: Solicitud gestionada con éxito.

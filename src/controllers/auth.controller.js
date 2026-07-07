@@ -1,5 +1,5 @@
 const Usuario = require('../models/usuario.model');
-
+const jwt = require('jsonwebtoken');
 const authCtrl = {};
 
 authCtrl.iniciarSesion = async (req, res) => {
@@ -43,12 +43,16 @@ authCtrl.iniciarSesion = async (req, res) => {
 
         // 6. Generar respuesta exitosa (Simulamos un token por ahora para que el Front lo reciba)
        
-        const tokenSimulado = 'JWT_TOKEN_SIMULADO_PROVISORIO';
+        const tokenReal = jwt.sign(
+            { idUsuario: usuario.idUsuario, rol: usuario.rol }, 
+            'PALABRA_SECRETA_TAXFEM_2026',
+            { expiresIn: '24h' }
+        );
 
         res.status(200).json({
             status: '1',
             msg: 'Inicio de sesión exitoso',
-            token: tokenSimulado,
+            token: tokenReal,
             user: {
                 idUsuario: usuario.idUsuario,
                 nombre: usuario.nombre,

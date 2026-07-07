@@ -9,6 +9,7 @@ const helloRoutes = require('./src/routes/hello.routes');
 const authRoutes = require('./src/routes/auth.routes');
 const adminRoutes = require('./src/routes/admin.routes');
 const conductoraRoute = require('./src/routes/conductora.route');
+const transaccionRoute = require('./src/routes/transacciones.route');
 
 // === IMPORTACIÓN DE MODELOS PARA LAS RELACIONES ===
 const Usuario = require('./src/models/usuario.model'); 
@@ -24,6 +25,7 @@ Vehiculo.belongsTo(Usuario, { foreignKey: 'idConductoraAsociada', as: 'datosCond
 // === Configuración de Swagger ===
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
+const transaccionesController = require('./src/controllers/transacciones.controller');
 const swaggerDocument = YAML.load('./docs/swagger.yaml');
 
 var app = express(); 
@@ -39,7 +41,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use('/api', helloRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
-
+app.use('/api/transaccion', transaccionRoute);
 app.use('/api', conductoraRoute);
  
 // Settings 

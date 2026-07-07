@@ -1,7 +1,7 @@
-const SolicitudViaje = require("../models/solicitud.model");
-const Viaje = require("../models/viaje.model");
-const Usuario = require("../models/usuario.model");
-const sequelize = require("../../config/database");
+const SolicitudViaje = require('../models/solicitud.model');
+const Viaje = require('../models/viaje.model');
+const Usuario = require('../models/usuario.model');
+const sequelize = require('../../config/database');
 
 const transaccionesController = {
 
@@ -16,7 +16,7 @@ const transaccionesController = {
 
             const { idPasajera, origen, destino, zona, cantPasajeros } = req.body;
 
-            const pasajera = await Usuario.scope('pasajera').findByPk(idPasajera);
+            const pasajera = await Usuario.findByPk(idPasajera);
             if (!pasajera) {
                 return res.status(404).json({ 
                     error: "La pasajera no existe o el usuario no tiene rol de Pasajera"
@@ -54,7 +54,7 @@ const transaccionesController = {
             if (!solicitud) return res.status(404).json({ error: "Solicitud no encontrada" });
 
             if (solicitud.estado === 'Propuesta' && solicitud.idConductoraAsignada) {
-                await Usuario.scope('conductora').update(
+                await Usuario.update(
                     { disponible: true },
                     { where: { idUsuario: solicitud.idConductoraAsignada } }
                 );
@@ -94,7 +94,7 @@ const transaccionesController = {
 
             const { zona } = req.query; 
 
-            const conductoras = await Usuario.scope('conductora').findAll({
+            const conductoras = await Usuario.findAll({
                 where: {
                     enJornada: true,
                     disponible: true,
@@ -120,7 +120,7 @@ const transaccionesController = {
             const solicitud = await SolicitudViaje.findByPk(idSolicitud);
             if (!solicitud) return res.status(404).json({ error: "Solicitud no encontrada" });
 
-            const conductora = await Usuario.scope('conductora').findByPk(idConductora);
+            const conductora = await Usuario.findByPk(idConductora);
             if (!conductora) {
                 return res.status(404).json({ error: "La conductora seleccionada no es válida o no existe." });
             }
@@ -182,7 +182,7 @@ const transaccionesController = {
                 return res.status(400).json({ error: "La solicitud debe ser previamente Aceptada por la conductora." });
             }
 
-            await Usuario.scope('conductora').update(
+            await Usuario.update(
                 { disponible: false },
                 { where: { idUsuario: solicitud.idConductoraAsignada }, transaction: t }
             );
@@ -228,7 +228,7 @@ const transaccionesController = {
 
             await viaje.save();
 
-            await Usuario.scope('conductora').update(
+            await Usuario.update(
                 { disponible: true },
                 { where: { idUsuario: viaje.idConductora } }
             );
