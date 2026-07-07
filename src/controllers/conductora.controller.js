@@ -88,9 +88,27 @@ const listarConductoras = async (req, res) => {
   }
 };
 
+// GET /api/conductoras/:id
+const obtenerConductoraPorId = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const conductora = await Conductora.findByPk(id, { 
+      include: 'vehiculoAsignado' 
+    });
+    if (!conductora) {
+      return res.status(404).json({ error: 'Conductora no encontrada.' });
+    }
+    res.status(200).json(conductora);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener la conductora.' });
+  }
+};
+
 module.exports = {
   iniciarJornada,
   finalizarJornada,
   solicitarCambioVehiculo,
-  listarConductoras
+  listarConductoras,
+  obtenerConductoraPorId
 };

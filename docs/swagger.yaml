@@ -8,226 +8,140 @@ servers:
     description: Servidor de Desarrollo Local
 
 paths:
-  /hello:
-    get:
-      summary: Endpoint de prueba (Hola Mundo)
-      tags:
-        - Pruebas Iniciales
-      responses:
-        '200':
-          description: Éxito
-
+  # --------------------------------------------------------
+  # RUTAS DE CONDUCTORAS
+  # --------------------------------------------------------
   /conductoras/jornada/inicio:
     put:
-      summary: Iniciar jornada laboral de una conductora
+      summary: Iniciar jornada de una conductora
       tags:
-        - Módulo Conductoras
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - idConductora
-                - zonaActual
-              properties:
-                idConductora:
-                  type: integer
-                  example: 1
-                zonaActual:
-                  type: string
-                  example: "Centro"
+        - Conductoras
       responses:
-        '200':
+        200:
           description: Jornada iniciada con éxito.
-        '403':
-          description: Prohibido. El vehículo está inactivo o no existe.
-        '404':
-          description: Conductora no encontrada.
+        400:
+          description: Error en la petición o datos inválidos.
 
   /conductoras/jornada/fin:
     put:
-      summary: Finalizar jornada laboral de una conductora
+      summary: Finalizar jornada de una conductora
       tags:
-        - Módulo Conductoras
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - idConductora
-              properties:
-                idConductora:
-                  type: integer
-                  example: 1
+        - Conductoras
       responses:
-        '200':
+        200:
           description: Jornada finalizada con éxito.
-        '404':
-          description: Conductora no encontrada.
+        400:
+          description: Error al finalizar la jornada.
 
   /conductoras/cambio-vehiculo:
     post:
-      summary: Solicitar un cambio de unidad/vehículo asignado
+      summary: Solicitar un cambio de vehículo
       tags:
-        - Módulo Conductoras
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - idConductora
-                - idNuevoVehiculo
-              properties:
-                idConductora:
-                  type: integer
-                  example: 1
-                idNuevoVehiculo:
-                  type: integer
-                  example: 5
+        - Conductoras
       responses:
-        '201':
-          description: Petición registrada de forma conforme.
-  
+        201:
+          description: Solicitud de cambio creada con éxito.
+        400:
+          description: Error al procesar la solicitud.
+
   /conductores:
     get:
-      summary: Listar todas las conductoras del sistema
+      summary: Listar conductoras (Filtros opcionales)
       tags:
-        - Módulo Conductoras
+        - Conductoras
       parameters:
         - name: enJornada
           in: query
+          description: Filtrar conductoras que estén activas en jornada (true/false)
           required: false
-          description: Filtrar solo las que están en turno de trabajo (true/false)
           schema:
-            type: boolean
+            type: string
       responses:
-        '200':
-          description: Listado obtenido con éxito.
+        200:
+          description: Listado de conductoras obtenido con éxito.
 
-  /admin/vehiculos:
+  /conductoras/{id}:
     get:
-      summary: Obtener el listado de toda la flota de autos (Exclusivo Admin)
+      summary: Obtener una conductora por su ID
       tags:
-        - Módulo Administradora (Flota)
+        - Conductoras
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID numérico de la conductora
+          schema:
+            type: integer
       responses:
-        '200':
-          description: Colección de vehículos devuelta con éxito.
+        200:
+          description: Datos de la conductora devueltos con éxito.
+        404:
+          description: Conductora no encontrada.
+
+  # --------------------------------------------------------
+  # RUTAS DE ADMINISTRACIÓN / VEHÍCULOS
+  # --------------------------------------------------------
+  /admin/vehiculos:
+    post:
+      summary: Dar de alta un nuevo vehículo
+      tags:
+        - Admin - Vehículos
+      responses:
+        201:
+          description: Vehículo creado correctamente.
+        400:
+          description: Error en los datos enviados.
+    get:
+      summary: Listar todos los vehículos
+      tags:
+        - Admin - Vehículos
+      responses:
+        200:
+          description: Listado de vehículos obtenido con éxito.
 
   /admin/vehiculos/{id}:
     get:
-      summary: Obtener la ficha técnica de un vehículo específico
+      summary: Obtener un vehículo por su ID
       tags:
-        - Módulo Administradora (Flota)
+        - Admin - Vehículos
       parameters:
         - name: id
           in: path
           required: true
+          description: ID del vehículo a buscar
           schema:
             type: integer
       responses:
-        '200':
+        200:
           description: Datos del vehículo devueltos.
-        '404':
-          description: El ID no corresponde a ningún auto.
-
-  /admin/vehiculos:
-    post:
-      summary: Dar de alta un vehículo en la flota (Exclusivo Admin)
-      tags:
-        - Módulo Administradora (Flota)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - marca
-                - modelo
-                - color
-                - patente
-              properties:
-                marca:
-                  type: string
-                  example: "Toyota"
-                modelo:
-                  type: string
-                  example: "Corolla"
-                color:
-                  type: string
-                  example: "Gris"
-                patente:
-                  type: string
-                  example: "AA123BB"
-      responses:
-        '201':
-          description: Vehículo guardado con éxito.
-        '400':
-          description: La patente ya existe en el sistema.
+        404:
+          description: Vehículo no encontrado.
 
   /admin/vehiculos/{id}/estado:
     put:
-      summary: Cambiar el estado lógico de un vehículo (Exclusivo Admin)
+      summary: Cambiar el estado lógico de un vehículo (Activar/Desactivar/Baja)
       tags:
-        - Módulo Administradora (Flota)
+        - Admin - Vehículos
       parameters:
         - name: id
           in: path
           required: true
-          description: ID numérico del vehículo a modificar
+          description: ID del vehículo a modificar
           schema:
             type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - activo
-              properties:
-                activo:
-                  type: boolean
-                  example: false
       responses:
-        '200':
-          description: Estado actualizado. Si se pasa a false, desloguea a su conductora.
-        '404':
-          description: Vehículo no mapeado en el sistema.
+        200:
+          description: Estado del vehículo actualizado con éxito.
+        404:
+          description: Vehículo no encontrado.
 
   /admin/conductoras/aprobar-vehiculo:
     put:
-      summary: Procesar y resolver el cambio de vehículo de una conductora (Exclusivo Admin)
+      summary: Gestionar (Aprobar o Rechazar) una solicitud de cambio de vehículo
       tags:
-        - Módulo Administradora (Flota)
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - idConductora
-                - idVehiculo
-                - autorizar
-              properties:
-                idConductora:
-                  type: integer
-                  example: 1
-                idVehiculo:
-                  type: integer
-                  example: 5
-                autorizar:
-                  type: boolean
-                  example: true
+        - Admin - Vehículos
       responses:
-        '200':
-          description: Resolución procesada (Aprobado/Rechazado).
-        '404':
-          description: Entidades no encontradas.
+        200:
+          description: Solicitud gestionada con éxito.
+        400:
+          description: Error al procesar la aprobación/rechazo.

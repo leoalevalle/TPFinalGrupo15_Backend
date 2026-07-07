@@ -8,6 +8,7 @@ router.put('/conductoras/jornada/inicio', conductoraCtrl.iniciarJornada);
 router.put('/conductoras/jornada/fin', conductoraCtrl.finalizarJornada);
 router.post('/conductoras/cambio-vehiculo', conductoraCtrl.solicitarCambioVehiculo);
 router.get('/conductores', conductoraCtrl.listarConductoras);
+router.get('/conductoras/:id', conductoraCtrl.obtenerConductoraPorId);
 
 router.post('/admin/vehiculos', vehiculoCtrl.altaVehiculo);
 router.put('/admin/vehiculos/:id/estado', vehiculoCtrl.cambiarEstadoLogicoVehiculo);

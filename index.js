@@ -46,7 +46,7 @@ app.use('/api', conductoraRoute);
 app.set('port', process.env.PORT || 3000); 
 
 // Sincronizar Base de Datos y arrancar el servidor 
-sequelize.sync({ force: false, alter: true })
+sequelize.sync({ force: true, alter: true })
     .then(async () => {
         console.log('Tablas de PostgreSQL sincronizadas');
 
@@ -108,7 +108,7 @@ sequelize.sync({ force: false, alter: true })
                     color: 'Blanco',
                     patente: 'ABC123',
                     activo: true,
-                    idConductoraAsociada: null // Inicia libre sin conductora
+                    idConductoraAsociada: 3
                 });
                 console.log('✅ ¡Vehículo de prueba (Fiat Cronos) creado en la BD!');
             }
