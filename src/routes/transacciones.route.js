@@ -13,7 +13,7 @@ console.log(typeof autCtrl.verifyToken);
 console.log(typeof verifyToken);
 
 // Endpoints de Pasajeras
-router.post("/solicitudes/:userId", verifyToken, ctrl.crearSolicitudViaje);
+router.post("/solicitudes", verifyToken, ctrl.crearSolicitudViaje);
 router.put("/solicitudes/:id/cancelar", verifyToken, ctrl.cancelarSolicitud);
 
 // Endpoints de Operadoras

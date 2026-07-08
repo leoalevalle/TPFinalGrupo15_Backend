@@ -7,8 +7,8 @@ const transaccionesController = {
   // POST /api/solicitudes
   crearSolicitudViaje: async (req, res) => {
     try {
-      console.log("usuario:", req.params.userId);
-      const usuarioAutenticado = await Usuario.findByPk(req.params.userId);
+      console.log("usuario:", req.userId);
+      const usuarioAutenticado = await Usuario.findByPk(req.userId);
       if (!usuarioAutenticado || usuarioAutenticado.rol !== 1) {
         return res.status(403).json({
           error: "Acceso denegado. Solo las pasajeras pueden solicitar viajes.",
