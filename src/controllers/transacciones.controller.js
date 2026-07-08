@@ -294,6 +294,32 @@ const transaccionesController = {
       return res.status(500).json({ error: error.message });
     }
   },
+
+  //GET /api/conductoras/solicitudes/propuesta
+  obtenerPropuestaActiva: async (req, res) =>{
+    try{
+      const usuarioAutenticado = await Usuario.findByPk(req.userId);
+            if (!usuarioAutenticado || usuarioAutenticado.rol !== 2) {
+                return res.status(403).json({ error: 
+                  "Acceso denegado. Solo las conductoras pueden consultar sus propuestas." });
+                }
+            const  propuesta = await SolicitudViaje.findOne({
+              where: {
+                idConductoraAsignada: req.userId,
+                estado: 'Propuesta'
+              }
+            });
+
+            if(!propuesta){
+              return res.json({
+                message: "No tiene ninguna propuesta de viajes asignada.", 
+                propuesta: null
+              })
+            }
+    } catch(error){
+      return res.status(500).json({error: error.message})
+    }
+  }
 };
 
 module.exports = transaccionesController;

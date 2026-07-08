@@ -39,6 +39,7 @@ router.put(
   verifyToken,
   ctrl.responderPropuesta,
 );
+router.get('/conductoras/solicitudes/propuesta', verifyToken, ctrl.obtenerPropuestaActiva);
 
 // Endpoints de Viajes
 router.post("/viajes", verifyToken, ctrl.registrarViaje);
