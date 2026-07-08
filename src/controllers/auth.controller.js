@@ -1,7 +1,12 @@
 const Usuario = require('../models/usuario.model');
+const Vehiculo = require('../models/vehiculo.model'); 
 const jwt = require('jsonwebtoken');
+
 const authCtrl = {};
 
+// =========================================================================
+// INICIO DE SESIÓN 
+// =========================================================================
 authCtrl.iniciarSesion = async (req, res) => {
     try {
         const { nomUsuario, contrasenia } = req.body;
@@ -41,8 +46,7 @@ authCtrl.iniciarSesion = async (req, res) => {
             });
         }
 
-        // 6. Generar respuesta exitosa (Simulamos un token por ahora para que el Front lo reciba)
-       
+        // 6. Generar respuesta exitosa con el Token Real firmado
         const tokenReal = jwt.sign(
             { idUsuario: usuario.idUsuario, rol: usuario.rol }, 
             'PALABRA_SECRETA_TAXFEM_2026',
@@ -69,6 +73,90 @@ authCtrl.iniciarSesion = async (req, res) => {
             msg: 'Error al intentar iniciar sesión',
             error: error.message
         });
+    }
+};
+
+// =========================================================================
+// MÉTODOS DE REGISTRO 
+// =========================================================================
+
+// POST /api/auth/register (Para Pasajeras)
+authCtrl.registrarPasajera = async (req, res) => {
+    try {
+        const { nombre, telefono, email, nomUsuario, contrasenia, sexo } = req.body;
+
+        // Validar Filtro de Género exclusivo de TaxFem
+        if (sexo !== 'F') {
+            return res.status(400).json({
+                status: '0',
+                msg: 'Registro rechazado. TaxFem es una plataforma exclusiva para el transporte seguro de mujeres.'
+            });
+        }
+
+        const nuevaPasajera = await Usuario.create({
+            nombre,
+            telefono,
+            email,
+            nomUsuario,
+            contrasenia,
+            sexo,
+            rol: 1,
+            activo: true 
+        });
+
+        res.status(201).json({
+            status: '1',
+            msg: 'Pasajera registrada con éxito',
+            data: nuevaPasajera
+        });
+    } catch (error) {
+        res.status(400).json({ status: '0', msg: 'Error al registrar pasajera', error: error.message });
+    }
+};
+
+// POST /api/auth/register-conductora (Para Conductoras + Vehículo)
+authCtrl.registrarConductora = async (req, res) => {
+    try {
+        const { nombre, telefono, email, nomUsuario, contrasenia, sexo, marca, modelo, color, patente } = req.body;
+
+        // Validar Filtro de Género exclusivo de TaxFem
+        if (sexo !== 'F') {
+            return res.status(400).json({
+                status: '0',
+                msg: 'Registro rechazado. Solo se admiten conductoras mujeres.'
+            });
+        }
+
+        // Crear la Conductora (Inactiva: requiere que la admin la habilite)
+        const nuevaConductora = await Usuario.create({
+            nombre,
+            telefono,
+            email,
+            nomUsuario,
+            contrasenia,
+            sexo,
+            rol: 2,
+            activo: false 
+        });
+
+        // Crear el Vehículo asociado usando la FK
+        const nuevoVehiculo = await Vehiculo.create({
+            marca,
+            modelo,
+            color,
+            patente,
+            activo: true,
+            idConductoraAsociada: nuevaConductora.idUsuario 
+        });
+
+        res.status(201).json({
+            status: '1',
+            msg: 'Solicitud de conductora enviada con éxito. Pendiente de aprobación.',
+            usuario: nuevaConductora,
+            vehiculo: nuevoVehiculo
+        });
+    } catch (error) {
+        res.status(400).json({ status: '0', msg: 'Error al registrar conductora', error: error.message });
     }
 };
 
