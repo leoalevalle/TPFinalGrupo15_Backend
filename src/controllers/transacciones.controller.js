@@ -331,7 +331,7 @@ const transaccionesController = {
       const fechaInicioReal = viaje.horarioInicio;
 
       const segundos = Math.abs(ahora - new Date(fechaInicioReal)) / 1000;
-      viaje.monto = parseFloat((400 + segundos * 1.5).toFixed(2));
+      viaje.monto = parseFloat((0.0400 + segundos * 1.5).toFixed(2));
 
       await viaje.save();
 
@@ -341,6 +341,50 @@ const transaccionesController = {
       );
 
       return res.json({ message: "Viaje finalizado con éxito", viaje });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  },
+
+  // PUT /api/viajes/:id/cancelar
+  cancelarEnRuta: async (req, res) => {
+    try {
+      const usuarioAutenticado = await Usuario.findByPk(req.userId);
+      if (
+        !usuarioAutenticado ||
+        (usuarioAutenticado.rol !== 2 && usuarioAutenticado.rol !== 3)
+      ) {
+        return res.status(403).json({
+          error: "Acceso denegado. No autorizado para finalizar viajes.",
+        });
+      }
+
+      const { id } = req.params;
+
+      const viaje = await Viaje.findByPk(id);
+      if (!viaje) return res.status(404).json({ error: "Viaje no encontrado" });
+
+      const ahora = new Date();
+      viaje.horarioFin = ahora;
+      viaje.estadoViaje = "Cancelado en Ruta";
+
+      const fechaInicioReal = viaje.horarioInicio;
+
+      if(fechaInicioReal){
+        const segundos = Math.abs(ahora - new Date(fechaInicioReal)) / 1000;
+        viaje.monto = parseFloat((0.0400 + segundos * 1.5).toFixed(2));
+      }else{
+        viaje.mont = 0;
+      }
+      
+      await viaje.save();
+
+      await Usuario.update(
+        { disponible: true },
+        { where: { idUsuario: viaje.idConductora } },
+      );
+
+      return res.json({ message: "Viaje cancelado con éxito", viaje });
     } catch (error) {
       return res.status(500).json({ error: error.message });
     }
@@ -465,8 +509,7 @@ const transaccionesController = {
 
       const viajesHoy = await Viaje.findAll({
         where: {
-          idConductora: idConductora, 
-          estadoViaje: 'Finalizado'
+          idConductora: idConductora
         }
       });
 
