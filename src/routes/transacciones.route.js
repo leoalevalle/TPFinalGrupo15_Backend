@@ -35,4 +35,5 @@ router.put("/viajes/:id/llegue_origen", verifyToken, ctrl.llegaOrigen);
 router.put("/viajes/:id/inicio-viaje", verifyToken, ctrl.informarInicioViaje);
 router.put("/viajes/:id/finalizar", verifyToken, ctrl.informarFinViaje);
 
+
 module.exports = router;
