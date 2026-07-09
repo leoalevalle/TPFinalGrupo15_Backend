@@ -19,6 +19,7 @@ router.put("/solicitudes/:id/cancelar", verifyToken, ctrl.cancelarSolicitud);
 
 // Endpoints de Operadoras
 router.get("/operadora/solicitudes", verifyToken, ctrl.listarSolicitudesPendientes);
+router.get("/operadora/solicitudes-aceptadas", verifyToken, ctrl.listarSolicitudesPendientes);
 router.get("/operadora/conductoras-zona", verifyToken, ctrl.consultarConductorasDisponibles);
 router.put("/operadora/asignar-propuesta", verifyToken, ctrl.seleccionarConductora);
 

@@ -103,6 +103,25 @@ const transaccionesController = {
     }
   },
 
+  // GET /api/operadora/solicitudes-aceptadas
+  listarSolicitudesAceptadas: async (req, res) => {
+    try {
+      const usuarioAutenticado = await Usuario.findByPk(req.userId);
+      if (!usuarioAutenticado || usuarioAutenticado.rol !== 3) {
+        return res.status(403).json({
+          error: "Acceso denegado. Endpoint exclusivo para Operadoras.",
+        });
+      }
+
+      const pendientes = await SolicitudViaje.findAll({
+        where: { estado: "Aceptada" },
+      });
+      return res.json(pendientes);
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  },
+
   // GET /api/operadora/conductoras-zona
   consultarConductorasDisponibles: async (req, res) => {
     try {
@@ -356,61 +375,59 @@ const transaccionesController = {
 
   // PUT /api/conductoras/solicitudes/:id/responder
   responderPropuesta: async (req, res) => {
-    const t = await sequelize.transaction();
-    
-    try {
-      const usuarioAutenticado = await Usuario.findByPk(req.userId);
-      if (!usuarioAutenticado || usuarioAutenticado.rol !== 2) {
-        await t.rollback();       return res.status(403).json({
-          error: "Acceso denegado. Solo las conductoras pueden responder propuestas.",
-        });
-      }
-      
-      const { id } = req.params;
-      const { aceptar } = req.body;
-      
-      const solicitud = await SolicitudViaje.findByPk(id);
-      if (!solicitud) {
-        await t.rollback();
-        return res.status(404).json({ error: "Solicitud no encontrada" });
-      }
-
-      if (aceptar) {
-        solicitud.estado = "Aceptada";
-        await solicitud.save({ transaction: t });
-
-        const conductoraPerfil = await Conductora.findOne({ where: { idUsuario: req.userId } });
-        if (conductoraPerfil) {
-          conductoraPerfil.disponible = false;
-          await conductoraPerfil.save({ transaction: t });
-        }
-
-        await t.commit();
-        return res.json({ message: "Propuesta aceptada con éxito y conductora asignada al servicio.", solicitud });
-
-      } else {
-        
-        solicitud.idConductoraAsignada = null;
-        solicitud.estado = "Pendiente";
-        await solicitud.save({ transaction: t });
-
-        const conductoraPerfil = await Conductora.findOne({ where: { idUsuario: req.userId } });
-        if (conductoraPerfil) {
-          conductoraPerfil.disponible = true; 
-          await conductoraPerfil.save({ transaction: t });
-        }
-
-        await t.commit();
-        return res.json({
-          message: "Propuesta rechazada. Reabierta en el panel de control y conductora liberada.",
-          solicitud,
-        });
-      }
-    } catch (error) {
+  const t = await sequelize.transaction();
+  
+  try {
+    const usuarioAutenticado = await Usuario.findByPk(req.userId, { transaction: t });
+    if (!usuarioAutenticado || usuarioAutenticado.rol !== 2) {
       await t.rollback();
-      return res.status(500).json({ error: error.message });
+      return res.status(403).json({
+        error: "Acceso denegado. Solo las conductoras pueden responder propuestas.",
+      });
     }
-  },
+    
+    const { id } = req.params;
+    const { aceptar } = req.body;
+    
+    const solicitud = await SolicitudViaje.findByPk(id, { transaction: t });
+    if (!solicitud) {
+      await t.rollback();
+      return res.status(404).json({ error: "Solicitud no encontrada" });
+    }
+
+    if (aceptar) {
+      solicitud.estado = "Aceptada";
+      await solicitud.save({ transaction: t });
+
+      usuarioAutenticado.disponible = false; 
+      await usuarioAutenticado.save({ transaction: t });
+
+      await t.commit();
+      return res.json({ 
+        message: "Propuesta aceptada con éxito y conductora asignada al servicio.", 
+        solicitud 
+      });
+
+    } else {
+      solicitud.idConductoraAsignada = null;
+      solicitud.estado = "Pendiente";
+      await solicitud.save({ transaction: t });
+
+      usuarioAutenticado.disponible = true; 
+      await usuarioAutenticado.save({ transaction: t });
+
+      await t.commit();
+      return res.json({
+        message: "Propuesta rechazada. Reabierta en el panel de control y conductora liberada.",
+        solicitud,
+      });
+    }
+  } catch (error) {
+    await t.rollback();
+    console.error("Error exacto en responderPropuesta:", error); // 👈 Esto te va a cantar si falta otra columna
+    return res.status(500).json({ error: error.message });
+  }
+},
 
   // GET /api/transaccion/conductoras/resumen
   obtenerResumenDiarioConductora: async (req, res) => {
