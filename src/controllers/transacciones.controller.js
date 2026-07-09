@@ -149,7 +149,7 @@ const transaccionesController = {
         return res.status(404).json({ error: "Solicitud no encontrada" });
       }
 
-      const conductora = await Usuario.findByPk(idConductora, { transaction: t });
+      const conductora = await Usuario.findByPk(idConductora);
       if (!conductora) {
         await t.rollback();
         return res.status(404).json({
@@ -159,13 +159,12 @@ const transaccionesController = {
 
       solicitud.idConductoraAsignada = idConductora;
       solicitud.estado = "Propuesta";
-      await solicitud.save({ transaction: t });
+      await solicitud.save();
 
       await Usuario.update(
         { disponible: false },
         { 
-          where: { idUsuario: idConductora },
-          transaction: t 
+          where: { idUsuario: idConductora }
         }
       );
 

@@ -25,7 +25,7 @@ router.put("/operadora/asignar-propuesta", verifyToken, ctrl.seleccionarConducto
 // Endpoints de Conductora
 router.get("/conductoras/solicitudes/propuesta", verifyToken, ctrl.obtenerPropuestaActiva); 
 router.put("/conductoras/solicitudes/:id/responder", verifyToken, ctrl.responderPropuesta);
-router.get("conductoras/resumen", verifyToken, ctrl.obtenerResumenDiarioConductora);
+router.get("/conductoras/resumen", verifyToken, ctrl.obtenerResumenDiarioConductora);
 // Endpoints de Viajes
 router.post("/viajes", verifyToken, ctrl.registrarViaje);
 router.put("/viajes/:id/llegue_origen", verifyToken, ctrl.llegaOrigen);
