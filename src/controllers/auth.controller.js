@@ -160,4 +160,65 @@ authCtrl.registrarConductora = async (req, res) => {
     }
 };
 
+//LOGIN CON GOOGLE 
+authCtrl.loginGoogle = async (req, res) => {
+
+    console.log("Entró a login Google");
+    try {
+        console.log("Entró a login Google");
+        console.log("Body recibido:", req.body);
+        const { email } = req.body;
+        const usuario = await Usuario.findOne({
+            where: { email }
+        });
+        console.log("Usuario encontrado:", usuario);
+
+        if (!usuario) {
+            console.log("NO EXISTE EL USUARIO");
+            return res.status(404).json({
+                status: "0",
+                msg: "No existe un usuario registrado con ese correo."
+            });
+        }
+
+        if (!usuario.activo) {
+            return res.status(403).json({
+                status: "0",
+                msg: "Usuario deshabilitado."
+            });
+        }
+
+        const tokenReal = jwt.sign(
+            {
+                idUsuario: usuario.idUsuario,
+                rol: usuario.rol
+            },
+            'PALABRA_SECRETA_TAXFEM_2026',
+            {
+                expiresIn: '24h'
+            }
+        );
+
+        res.json({
+            status: "1",
+            msg: "Login Google exitoso",
+            token: tokenReal,
+            user: {
+                idUsuario: usuario.idUsuario,
+                nombre: usuario.nombre,
+                email: usuario.email,
+                rol: usuario.rol,
+                nomUsuario: usuario.nomUsuario,
+                sexo: usuario.sexo
+            }
+        });
+    }
+    catch(error){
+        res.status(500).json({
+            status:"0",
+            msg:error.message
+        });
+    }
+}
+
 module.exports = authCtrl;
