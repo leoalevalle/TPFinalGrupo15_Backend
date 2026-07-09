@@ -9,9 +9,10 @@ const Viaje = sequelize.define('Viaje', {
     idOperadoraAsignadora: { type: DataTypes.INTEGER, allowNull: false},
     patenteVehiculoUtilizado: { type: DataTypes.STRING, allowNull: false},
     fecha: { type: DataTypes.DATEONLY, defaultValue: DataTypes.NOW},
-    horarioInicio: { type: DataTypes.DATE, allowNull: false},
+    horarioCaminoOrigen: { type: DataTypes.DATE, allowNull: false},
+    horarioInicio: { type: DataTypes.DATE, allowNull: true},
     horarioFin: { type: DataTypes.DATE, allowNull: true},
-    estadoViaje: { type: DataTypes.ENUM('En Camino', 'Finalizado', 'Cancelado en Ruta'),
+    estadoViaje: { type: DataTypes.ENUM('En Camino', 'En Origen','En Viaje','Finalizado', 'Cancelado en Ruta'),
         defaultValue: 'En Camino'
     },
     monto: { type: DataTypes.FLOAT, allowNull: true}

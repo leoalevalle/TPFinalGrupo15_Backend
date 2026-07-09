@@ -16,6 +16,12 @@ Usuario.init({
     allowNull: true,
     field: 'en_jornada'
   },
+  enViaje: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    allowNull: true,
+    field: 'en_viaje'
+  },
   zonaActual: {
     type: DataTypes.STRING(100),
     allowNull: true,
