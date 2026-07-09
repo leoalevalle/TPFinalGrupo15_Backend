@@ -34,12 +34,8 @@ router.put(
 );
 
 // Endpoints de Conductora
-router.put(
-  "/conductoras/solicitudes/:id/responder",
-  verifyToken,
-  ctrl.responderPropuesta,
-);
-router.get('/conductoras/solicitudes/propuesta', verifyToken, ctrl.obtenerPropuestaActiva);
+router.get("/conductoras/solicitudes/propuesta", verifyToken, ctrl.obtenerPropuestaActiva); // 👈 AGREGA ESTA LÍNEA
+router.put("/conductoras/solicitudes/:id/responder", verifyToken, ctrl.responderPropuesta);
 
 // Endpoints de Viajes
 router.post("/viajes", verifyToken, ctrl.registrarViaje);

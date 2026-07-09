@@ -164,42 +164,6 @@ const transaccionesController = {
     }
   },
 
-  // PUT /api/conductoras/solicitudes/:id/responder
-  responderPropuesta: async (req, res) => {
-    try {
-      const usuarioAutenticado = await Usuario.findByPk(req.userId);
-      if (!usuarioAutenticado || usuarioAutenticado.rol !== 2) {
-        return res.status(403).json({
-          error:
-            "Acceso denegado. Solo las conductoras pueden responder propuestas.",
-        });
-      }
-
-      const { id } = req.params;
-      const { aceptar } = req.body;
-
-      const solicitud = await SolicitudViaje.findByPk(id);
-      if (!solicitud)
-        return res.status(404).json({ error: "Solicitud no encontrada" });
-
-      if (aceptar) {
-        solicitud.estado = "Aceptada";
-        await solicitud.save();
-        return res.json({ message: "Propuesta aceptada", solicitud });
-      } else {
-        solicitud.idConductoraAsignada = null;
-        solicitud.estado = "Pendiente";
-        await solicitud.save();
-        return res.json({
-          message: "Propuesta rechazada. Reabierta en el panel de control.",
-          solicitud,
-        });
-      }
-    } catch (error) {
-      return res.status(500).json({ error: error.message });
-    }
-  },
-
   // POST /api/viajes
   registrarViaje: async (req, res) => {
     const usuarioAutenticado = await Usuario.findByPk(req.userId);
@@ -295,31 +259,87 @@ const transaccionesController = {
     }
   },
 
-  //GET /api/conductoras/solicitudes/propuesta
-  obtenerPropuestaActiva: async (req, res) =>{
-    try{
-      const usuarioAutenticado = await Usuario.findByPk(req.userId);
-            if (!usuarioAutenticado || usuarioAutenticado.rol !== 2) {
-                return res.status(403).json({ error: 
-                  "Acceso denegado. Solo las conductoras pueden consultar sus propuestas." });
-                }
-            const  propuesta = await SolicitudViaje.findOne({
-              where: {
-                idConductoraAsignada: req.userId,
-                estado: 'Propuesta'
-              }
-            });
+  //EndPoints Conductora
 
-            if(!propuesta){
-              return res.json({
-                message: "No tiene ninguna propuesta de viajes asignada.", 
-                propuesta: null
-              })
-            }
-    } catch(error){
-      return res.status(500).json({error: error.message})
+  //GET /api/conductoras/solicitudes/propuesta
+  obtenerPropuestaActiva: async (req, res) => {
+    try {
+      // req.userId viene automáticamente gracias al middleware verifyToken
+      const usuarioAutenticado = await Usuario.findByPk(req.userId);
+      if (!usuarioAutenticado || usuarioAutenticado.rol !== 2) {
+        return res.status(403).json({ error: "Acceso denegado. Solo las conductoras pueden ver propuestas." });
+      }
+
+      // Buscamos en la base de datos si tiene alguna solicitud con estado "Propuesta"
+      const propuesta = await SolicitudViaje.findOne({
+        where: {
+          idConductoraAsignada: req.userId,
+          estado: "Propuesta"
+        }
+      });
+
+      // Si no hay ninguna propuesta, devolvemos un objeto vacío o null de forma limpia
+      if (!propuesta) {
+        return res.json(null);
+      }
+
+      // Si existe, la enviamos al frontend
+      return res.json(propuesta);
+
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
     }
+  },
+
+  // PUT /api/conductoras/solicitudes/:id/responder
+responderPropuesta: async (req, res) => {
+  const t = await sequelize.transaction();
+  
+  try {
+    const usuarioAutenticado = await Usuario.findByPk(req.userId);
+    if (!usuarioAutenticado || usuarioAutenticado.rol !== 2) {
+      return res.status(403).json({
+        error: "Acceso denegado. Solo las conductoras pueden responder propuestas.",
+      });
+    }
+    const { id } = req.params;
+    const { aceptar } = req.body;
+    const solicitud = await SolicitudViaje.findByPk(id);
+    if (!solicitud) {
+      await t.rollback();
+      return res.status(404).json({ error: "Solicitud no encontrada" });
+    }
+
+    if (aceptar) {
+      solicitud.estado = "Aceptada";
+      await solicitud.save({ transaction: t });
+
+      const conductoraPerfil = await Conductora.findOne({ where: { idUsuario: req.userId } });
+      if (conductoraPerfil) {
+        conductoraPerfil.disponible = false;
+        await conductoraPerfil.save({ transaction: t });
+      }
+
+      await t.commit();
+      return res.json({ message: "Propuesta aceptada con éxito y conductora asignada al servicio.", solicitud });
+
+    } else {
+      solicitud.idConductoraAsignada = null;
+      solicitud.estado = "Pendiente";
+      await solicitud.save({ transaction: t });
+
+      await t.commit();
+      return res.json({
+        message: "Propuesta rechazada. Reabierta en el panel de control.",
+        solicitud,
+      });
+    }
+  } catch (error) {
+    await t.rollback();
+    return res.status(500).json({ error: error.message });
   }
+},
+
 };
 
 module.exports = transaccionesController;
