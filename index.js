@@ -55,7 +55,7 @@ app.set("port", process.env.PORT || 3000);
 
 // Sincronizar Base de Datos y arrancar el servidor
 sequelize
-  .sync({ force: false, alter: true })
+  .sync({ force: true, alter: true })
   .then(async () => {
     console.log("Tablas de PostgreSQL sincronizadas");
 

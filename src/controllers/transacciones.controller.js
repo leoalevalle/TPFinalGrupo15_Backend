@@ -417,11 +417,14 @@ const transaccionesController = {
     }
 
     if (aceptar) {
-      solicitud.estado = "Aceptada";
+      solicitud.estado = 'Aceptada';
       await solicitud.save({ transaction: t });
 
-      usuarioAutenticado.disponible = false; 
-      await usuarioAutenticado.save({ transaction: t });
+      const conductoraPerfil = await Usuario.findOne({ where: { idUsuario: req.userId } });
+      if (conductoraPerfil) {
+        conductoraPerfil.disponible = false;
+        await conductoraPerfil.save({ transaction: t });
+      }
 
       await t.commit();
       return res.json({ 
@@ -431,7 +434,7 @@ const transaccionesController = {
 
     } else {
       solicitud.idConductoraAsignada = null;
-      solicitud.estado = "Pendiente";
+      solicitud.estado = 'Pendiente';
       await solicitud.save({ transaction: t });
 
       usuarioAutenticado.disponible = true; 
