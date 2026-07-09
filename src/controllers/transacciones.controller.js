@@ -311,10 +311,10 @@ responderPropuesta: async (req, res) => {
     }
 
     if (aceptar) {
-      solicitud.estado = "Aceptada";
+      solicitud.estado = 'Aceptada';
       await solicitud.save({ transaction: t });
 
-      const conductoraPerfil = await Conductora.findOne({ where: { idUsuario: req.userId } });
+      const conductoraPerfil = await Usuario.findOne({ where: { idUsuario: req.userId } });
       if (conductoraPerfil) {
         conductoraPerfil.disponible = false;
         await conductoraPerfil.save({ transaction: t });
@@ -325,7 +325,7 @@ responderPropuesta: async (req, res) => {
 
     } else {
       solicitud.idConductoraAsignada = null;
-      solicitud.estado = "Pendiente";
+      solicitud.estado = 'Pendiente';
       await solicitud.save({ transaction: t });
 
       await t.commit();
