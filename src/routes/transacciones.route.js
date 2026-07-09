@@ -23,10 +23,12 @@ router.get("/operadora/solicitudes-aceptadas", verifyToken, ctrl.listarSolicitud
 router.get("/operadora/conductoras-zona", verifyToken, ctrl.consultarConductorasDisponibles);
 router.put("/operadora/asignar-propuesta", verifyToken, ctrl.seleccionarConductora);
 
-// Endpoints de Conductora
+// Endpoints de Conductora 
 router.get("/conductoras/solicitudes/propuesta", verifyToken, ctrl.obtenerPropuestaActiva); 
+router.get("/conductoras/viajes/activo", verifyToken, ctrl.obtenerViajeActivoConductora); 
 router.put("/conductoras/solicitudes/:id/responder", verifyToken, ctrl.responderPropuesta);
 router.get("/conductoras/resumen", verifyToken, ctrl.obtenerResumenDiarioConductora);
+
 // Endpoints de Viajes
 router.post("/viajes", verifyToken, ctrl.registrarViaje);
 router.put("/viajes/:id/llegue_origen", verifyToken, ctrl.llegaOrigen);

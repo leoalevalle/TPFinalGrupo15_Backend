@@ -240,7 +240,7 @@ const transaccionesController = {
           idConductora: solicitud.idConductoraAsignada,
           idOperadoraAsignadora: idOperadora,
           patenteVehiculoUtilizado: patenteVehiculo,
-          horarioCaminioOrigen: new Date(),
+          horarioCaminoOrigen: new Date(),
           estadoViaje: "En Camino",
         },
         { transaction: t },
@@ -292,14 +292,11 @@ const transaccionesController = {
         return res.status(400).json({ error: "Debe marcar que arribó al origen antes de iniciar el viaje físico." });
       }
 
-      viaje.estadoViaje = "En Viaje";
-      viaje.horarioInicio = new Date(); 
-      await viaje.save({ transaction: t });
-
-      await Conductora.update(
-        { enViaje: true },
-        { where: { idUsuario: viaje.idConductora }, transaction: t }
-      );
+      await viaje.update({
+        estadoViaje: "En Viaje",
+        horarioInicio: new Date() 
+      
+      }, { transaction: t });
 
       await t.commit();
       return res.json({ message: "Viaje inciado", viaje });
@@ -331,7 +328,9 @@ const transaccionesController = {
       viaje.horarioFin = ahora;
       viaje.estadoViaje = "Finalizado";
 
-      const segundos = Math.abs(ahora - new Date(viaje.horarioInicio)) / 1000;
+      const fechaInicioReal = viaje.horarioInicio;
+
+      const segundos = Math.abs(ahora - new Date(fechaInicioReal)) / 1000;
       viaje.monto = parseFloat((400 + segundos * 1.5).toFixed(2));
 
       await viaje.save();
@@ -369,6 +368,28 @@ const transaccionesController = {
       return res.json(propuesta);
 
     } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  },
+
+  // GET /api/conductoras/viajes/activo
+  obtenerViajeActivoConductora: async (req, res) => {
+    try {
+      const { Op } = require('sequelize');
+      const idConductora = req.userId;
+
+      const viajeActivo = await Viaje.findOne({
+        where: {
+          idConductora: idConductora,
+          estadoViaje: { [Op.notIn]: ['Finalizado', 'Cancelado en Ruta'] }
+        }
+      });
+
+      if (!viajeActivo) return res.json(null);
+
+      return res.json(viajeActivo);
+    } catch (error) {
+      console.error("Error en obtenerViajeActivoConductora:", error);
       return res.status(500).json({ error: error.message });
     }
   },
@@ -424,40 +445,39 @@ const transaccionesController = {
     }
   } catch (error) {
     await t.rollback();
-    console.error("Error exacto en responderPropuesta:", error); // 👈 Esto te va a cantar si falta otra columna
+    console.error("Error exacto en responderPropuesta:", error);
     return res.status(500).json({ error: error.message });
   }
 },
 
-  // GET /api/transaccion/conductoras/resumen
   obtenerResumenDiarioConductora: async (req, res) => {
     try {
-      const idConductora = req.userId;
-      const { Op } = require("sequelize");
-      
-      const inicioHoy = new Date();
-      inicioHoy.setHours(0, 0, 0, 0);
-      const finHoy = new Date();
-      finHoy.setHours(23, 59, 59, 999);
+      const idConductora = req.user ? req.user.id : req.userId;
 
-      const viajesDeHoy = await Viaje.findAll({
+      if (!idConductora) {
+        return res.status(401).json({ error: "No se pudo autenticar a la conductora. Falta el ID." });
+      }
+
+      const hoy = new Date().toISOString().slice(0, 10);
+
+      const viajesHoy = await Viaje.findAll({
         where: {
-          idConductora: idConductora,
-          estadoViaje: "Finalizado",
-          horarioFin: {
-            [Op.between]: [inicioHoy, finHoy]
-          }
+          idConductora: idConductora, 
+          estadoViaje: 'Finalizado'
         }
       });
 
-      const totalRecaudado = viajesDeHoy.reduce((suma, v) => suma + (v.monto || 0), 0);
+      const totalGanado = viajesHoy.reduce((sum, v) => sum + parseFloat(v.monto || 0), 0);
 
       return res.json({
-        fecha: new Date().toLocaleDateString(),
-        viajesRealizados: viajesDeHoy.length,
-        totalGanado: parseFloat(totalRecaudado.toFixed(2))
+        fecha: hoy,
+        viajesRealizados: viajesHoy.length,
+        totalGanado: parseFloat(totalGanado.toFixed(2)),
+        listaViajes: viajesHoy
       });
+
     } catch (error) {
+      console.error("Error en obtenerResumenDiarioConductora:", error);
       return res.status(500).json({ error: error.message });
     }
   }
