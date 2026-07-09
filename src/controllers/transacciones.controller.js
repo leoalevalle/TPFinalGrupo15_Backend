@@ -130,9 +130,12 @@ const transaccionesController = {
 
   // PUT /api/operadora/asignar-propuesta
   seleccionarConductora: async (req, res) => {
+    const t = await sequelize.transaction();
+    
     try {
       const usuarioAutenticado = await Usuario.findByPk(req.userId);
       if (!usuarioAutenticado || usuarioAutenticado.rol !== 3) {
+        await t.rollback();
         return res.status(403).json({
           error: "Acceso denegado. Endpoint exclusivo para Operadoras.",
         });
@@ -140,12 +143,15 @@ const transaccionesController = {
 
       const { idSolicitud, idConductora } = req.body;
 
-      const solicitud = await SolicitudViaje.findByPk(idSolicitud);
-      if (!solicitud)
+      const solicitud = await SolicitudViaje.findByPk(idSolicitud, { transaction: t });
+      if (!solicitud) {
+        await t.rollback();
         return res.status(404).json({ error: "Solicitud no encontrada" });
+      }
 
-      const conductora = await Usuario.findByPk(idConductora);
+      const conductora = await Usuario.findByPk(idConductora, { transaction: t });
       if (!conductora) {
+        await t.rollback();
         return res.status(404).json({
           error: "La conductora seleccionada no es válida o no existe.",
         });
@@ -153,13 +159,24 @@ const transaccionesController = {
 
       solicitud.idConductoraAsignada = idConductora;
       solicitud.estado = "Propuesta";
-      await solicitud.save();
+      await solicitud.save({ transaction: t });
+
+      await Usuario.update(
+        { disponible: false },
+        { 
+          where: { idUsuario: idConductora },
+          transaction: t 
+        }
+      );
+
+      await t.commit();
 
       return res.json({
-        message: "Propuesta enviada a la conductora con éxito",
+        message: "Propuesta enviada a la conductora con éxito. Conductora reservada temporalmente.",
         solicitud,
       });
     } catch (error) {
+      await t.rollback();
       return res.status(500).json({ error: error.message });
     }
   },
@@ -205,7 +222,7 @@ const transaccionesController = {
           idConductora: solicitud.idConductoraAsignada,
           idOperadoraAsignadora: idOperadora,
           patenteVehiculoUtilizado: patenteVehiculo,
-          horarioInicio: new Date(),
+          horarioCaminioOrigen: new Date(),
           estadoViaje: "En Camino",
         },
         { transaction: t },
@@ -215,6 +232,59 @@ const transaccionesController = {
       return res
         .status(201)
         .json({ message: "Viaje registrado e iniciado en ruta", nuevoViaje });
+    } catch (error) {
+      await t.rollback();
+      return res.status(500).json({ error: error.message });
+    }
+  },
+
+  //PUT /api/transaccion/viajes/:id/llegue-origen
+  llegaOrigen: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const viaje = await Viaje.findByPk(id);
+      
+      if (!viaje) return res.status(404).json({ error: "Viaje no encontrado." });
+      if (viaje.estadoViaje !== "En Camino") {
+        return res.status(400).json({ error: "El viaje debe estar en estado 'En Camino' para marcar llegada a Origen." });
+      }
+
+      viaje.estadoViaje = "En Origen";
+      await viaje.save();
+
+      return res.json({ message: "Conductora llego al origen.", viaje });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  },
+
+  //PUT /api/transaccion/viajes/:id/inicio-viaje
+  informarInicioViaje: async (req, res) => {
+    const t = await sequelize.transaction();
+    try {
+      const { id } = req.params;
+      const viaje = await Viaje.findByPk(id, { transaction: t });
+      
+      if (!viaje) {
+        await t.rollback();
+        return res.status(404).json({ error: "Viaje no encontrado." });
+      }
+      if (viaje.estadoViaje !== "En Origen") {
+        await t.rollback();
+        return res.status(400).json({ error: "Debe marcar que arribó al origen antes de iniciar el viaje físico." });
+      }
+
+      viaje.estadoViaje = "En Viaje";
+      viaje.horarioInicio = new Date(); 
+      await viaje.save({ transaction: t });
+
+      await Conductora.update(
+        { enViaje: true },
+        { where: { idUsuario: viaje.idConductora }, transaction: t }
+      );
+
+      await t.commit();
+      return res.json({ message: "Viaje inciado", viaje });
     } catch (error) {
       await t.rollback();
       return res.status(500).json({ error: error.message });
@@ -259,18 +329,14 @@ const transaccionesController = {
     }
   },
 
-  //EndPoints Conductora
-
   //GET /api/conductoras/solicitudes/propuesta
   obtenerPropuestaActiva: async (req, res) => {
     try {
-      // req.userId viene automáticamente gracias al middleware verifyToken
       const usuarioAutenticado = await Usuario.findByPk(req.userId);
       if (!usuarioAutenticado || usuarioAutenticado.rol !== 2) {
         return res.status(403).json({ error: "Acceso denegado. Solo las conductoras pueden ver propuestas." });
       }
 
-      // Buscamos en la base de datos si tiene alguna solicitud con estado "Propuesta"
       const propuesta = await SolicitudViaje.findOne({
         where: {
           idConductoraAsignada: req.userId,
@@ -278,12 +344,10 @@ const transaccionesController = {
         }
       });
 
-      // Si no hay ninguna propuesta, devolvemos un objeto vacío o null de forma limpia
       if (!propuesta) {
         return res.json(null);
       }
 
-      // Si existe, la enviamos al frontend
       return res.json(propuesta);
 
     } catch (error) {
@@ -292,54 +356,95 @@ const transaccionesController = {
   },
 
   // PUT /api/conductoras/solicitudes/:id/responder
-responderPropuesta: async (req, res) => {
-  const t = await sequelize.transaction();
-  
-  try {
-    const usuarioAutenticado = await Usuario.findByPk(req.userId);
-    if (!usuarioAutenticado || usuarioAutenticado.rol !== 2) {
-      return res.status(403).json({
-        error: "Acceso denegado. Solo las conductoras pueden responder propuestas.",
-      });
-    }
-    const { id } = req.params;
-    const { aceptar } = req.body;
-    const solicitud = await SolicitudViaje.findByPk(id);
-    if (!solicitud) {
-      await t.rollback();
-      return res.status(404).json({ error: "Solicitud no encontrada" });
-    }
-
-    if (aceptar) {
-      solicitud.estado = "Aceptada";
-      await solicitud.save({ transaction: t });
-
-      const conductoraPerfil = await Conductora.findOne({ where: { idUsuario: req.userId } });
-      if (conductoraPerfil) {
-        conductoraPerfil.disponible = false;
-        await conductoraPerfil.save({ transaction: t });
+  responderPropuesta: async (req, res) => {
+    const t = await sequelize.transaction();
+    
+    try {
+      const usuarioAutenticado = await Usuario.findByPk(req.userId);
+      if (!usuarioAutenticado || usuarioAutenticado.rol !== 2) {
+        await t.rollback();       return res.status(403).json({
+          error: "Acceso denegado. Solo las conductoras pueden responder propuestas.",
+        });
+      }
+      
+      const { id } = req.params;
+      const { aceptar } = req.body;
+      
+      const solicitud = await SolicitudViaje.findByPk(id);
+      if (!solicitud) {
+        await t.rollback();
+        return res.status(404).json({ error: "Solicitud no encontrada" });
       }
 
-      await t.commit();
-      return res.json({ message: "Propuesta aceptada con éxito y conductora asignada al servicio.", solicitud });
+      if (aceptar) {
+        solicitud.estado = "Aceptada";
+        await solicitud.save({ transaction: t });
 
-    } else {
-      solicitud.idConductoraAsignada = null;
-      solicitud.estado = "Pendiente";
-      await solicitud.save({ transaction: t });
+        const conductoraPerfil = await Conductora.findOne({ where: { idUsuario: req.userId } });
+        if (conductoraPerfil) {
+          conductoraPerfil.disponible = false;
+          await conductoraPerfil.save({ transaction: t });
+        }
 
-      await t.commit();
-      return res.json({
-        message: "Propuesta rechazada. Reabierta en el panel de control.",
-        solicitud,
-      });
+        await t.commit();
+        return res.json({ message: "Propuesta aceptada con éxito y conductora asignada al servicio.", solicitud });
+
+      } else {
+        
+        solicitud.idConductoraAsignada = null;
+        solicitud.estado = "Pendiente";
+        await solicitud.save({ transaction: t });
+
+        const conductoraPerfil = await Conductora.findOne({ where: { idUsuario: req.userId } });
+        if (conductoraPerfil) {
+          conductoraPerfil.disponible = true; 
+          await conductoraPerfil.save({ transaction: t });
+        }
+
+        await t.commit();
+        return res.json({
+          message: "Propuesta rechazada. Reabierta en el panel de control y conductora liberada.",
+          solicitud,
+        });
+      }
+    } catch (error) {
+      await t.rollback();
+      return res.status(500).json({ error: error.message });
     }
-  } catch (error) {
-    await t.rollback();
-    return res.status(500).json({ error: error.message });
-  }
-},
+  },
 
+  // GET /api/transaccion/conductoras/resumen
+  obtenerResumenDiarioConductora: async (req, res) => {
+    try {
+      const idConductora = req.userId;
+      const { Op } = require("sequelize");
+      
+      const inicioHoy = new Date();
+      inicioHoy.setHours(0, 0, 0, 0);
+      const finHoy = new Date();
+      finHoy.setHours(23, 59, 59, 999);
+
+      const viajesDeHoy = await Viaje.findAll({
+        where: {
+          idConductora: idConductora,
+          estadoViaje: "Finalizado",
+          horarioFin: {
+            [Op.between]: [inicioHoy, finHoy]
+          }
+        }
+      });
+
+      const totalRecaudado = viajesDeHoy.reduce((suma, v) => suma + (v.monto || 0), 0);
+
+      return res.json({
+        fecha: new Date().toLocaleDateString(),
+        viajesRealizados: viajesDeHoy.length,
+        totalGanado: parseFloat(totalRecaudado.toFixed(2))
+      });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  }
 };
 
 module.exports = transaccionesController;

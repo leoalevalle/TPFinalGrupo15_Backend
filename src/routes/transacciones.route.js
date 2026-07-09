@@ -34,7 +34,7 @@ router.put(
 );
 
 // Endpoints de Conductora
-router.get("/conductoras/solicitudes/propuesta", verifyToken, ctrl.obtenerPropuestaActiva); // 👈 AGREGA ESTA LÍNEA
+router.get("/conductoras/solicitudes/propuesta", verifyToken, ctrl.obtenerPropuestaActiva); 
 router.put("/conductoras/solicitudes/:id/responder", verifyToken, ctrl.responderPropuesta);
 
 // Endpoints de Viajes
