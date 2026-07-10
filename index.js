@@ -15,6 +15,9 @@ const transaccionRoute = require("./src/routes/transacciones.route");
 const Usuario = require("./src/models/usuario.model");
 const Vehiculo = require("./src/models/vehiculo.model");
 const Conductora = require("./src/models/conductora.model");
+const Viaje = require("./src/models/viaje.model");
+const SolicitudViaje = require("./src/models/solicitud.model");
+
 //const Vehiculo = require('./src/models/vehiculo.model');
 
 // === DEFINICION DE RELACIONES ===
@@ -27,6 +30,15 @@ Vehiculo.belongsTo(Usuario, {
   foreignKey: "idConductoraAsociada",
   as: "datosConductora",
 });
+
+// Un viaje pertenece a una Pasajera (Usuario)
+Viaje.belongsTo(Usuario, { foreignKey: "idPasajera", as: "pasajera" });
+// Un viaje pertenece a una Conductora (Usuario)
+Viaje.belongsTo(Usuario, { foreignKey: "idConductora", as: "conductora" });
+// Un viaje se origina de una Solicitud
+Viaje.belongsTo(SolicitudViaje, { foreignKey: "idSolicitudOrigen", as: "solicitud" });
+// Un viaje utiliza un vehículo identificándolo por su patente
+Viaje.belongsTo(Vehiculo, { foreignKey: "patenteVehiculoUtilizado", targetKey: "patente", as: "vehiculo" });
 
 // === Configuración de Swagger ===
 const swaggerUi = require("swagger-ui-express");
