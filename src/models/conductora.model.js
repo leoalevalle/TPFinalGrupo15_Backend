@@ -26,11 +26,17 @@ Usuario.init({
     type: DataTypes.STRING(100),
     allowNull: true,
     field: 'zona_actual'
+  },
+  saldoAcumulado: {
+        type: DataTypes.FLOAT,
+        allowNull: true, 
+        defaultValue: 0.0
   }
 }, {
   sequelize: require('../../config/database'),
   tableName: 'usuarios',
-  modelName: 'Conductora'
+  paranoid: true,
+  modelName: 'Conductora',
 });
 
 module.exports = Conductora;

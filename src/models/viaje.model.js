@@ -15,7 +15,10 @@ const Viaje = sequelize.define('Viaje', {
     estadoViaje: { type: DataTypes.ENUM('En Camino', 'En Origen','En Viaje','Finalizado', 'Cancelado en Ruta'),
         defaultValue: 'En Camino'
     },
-    monto: { type: DataTypes.FLOAT, allowNull: true}
+    monto: { type: DataTypes.FLOAT, allowNull: true},
+    metodoPago: { type: DataTypes.ENUM('Efectivo', 'MercadoPago'), allowNull: true},
+    estadoPago: { type: DataTypes.ENUM('Pendiente', 'Aprobado', 'Fallido'), defaultValue: 'Pendiente'},
+    mercadopagoPaymentId: { type: DataTypes.STRING, allowNull: true}
     },{
         tableName: 'viajes',
         timestamps: false
