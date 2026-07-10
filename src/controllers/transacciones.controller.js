@@ -335,11 +335,6 @@ const transaccionesController = {
 
       await viaje.save();
 
-      await Usuario.update(
-        { disponible: true },
-        { where: { idUsuario: viaje.idConductora } },
-      );
-
       return res.json({ message: "Viaje finalizado con éxito", viaje });
     } catch (error) {
       return res.status(500).json({ error: error.message });
@@ -526,8 +521,105 @@ const transaccionesController = {
       console.error("Error en obtenerResumenDiarioConductora:", error);
       return res.status(500).json({ error: error.message });
     }
-  }
+  },
   
+  confirmarPagoEfectivo: async (req, res) => {
+    try {
+      const { idViaje } = req.body;
+        
+      const viaje = await Viaje.findByPk(idViaje);
+      if (!viaje) return res.status(404).json({ error: "Viaje no encontrado" });
+
+      viaje.metodoPago = 'Efectivo';
+      viaje.estadoPago = 'Aprobado';
+      await viaje.save();
+
+      await Usuario.update(
+        { disponible: true },
+        { where: { idUsuario: viaje.idConductora } }
+      );
+
+      return res.json({ message: "Pago en efectivo registrado y viaje cerrado", viaje });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  },
+
+  confirmarPagoMercadoPago: async (req, res) => {
+    const t = await sequelize.transaction();
+    try {
+      const { idViaje, paymentId } = req.body;
+
+      const viaje = await Viaje.findByPk(idViaje, { transaction: t });
+      if (!viaje) {
+        await t.rollback();
+        return res.status(404).json({ error: "Viaje no encontrado" });
+      }
+
+      if (viaje.estadoPago === 'Aprobado') {
+        await t.rollback();
+        return res.json({ message: "El pago ya había sido procesado previamente", viaje });
+      }
+
+      viaje.metodoPago = 'MercadoPago';
+      viaje.estadoPago = 'Aprobado';
+      viaje.mercadopagoPaymentId = paymentId;
+      await viaje.save({ transaction: t });
+
+      const conductora = await Usuario.findByPk(viaje.idConductora, { transaction: t });
+      if (conductora) {
+        const saldoActual = parseFloat(conductora.saldoAcumulado || 0);
+        const nuevoMonto = parseFloat(viaje.monto || 0);
+        
+        conductora.saldoAcumulado = parseFloat((saldoActual + nuevoMonto).toFixed(2));
+        conductora.disponible = true;
+        await conductora.save({ transaction: t });
+      }
+
+      await t.commit();
+      return res.json({ message: "Pago de Mercado Pago acreditado con éxito en su billetera", viaje });
+    } catch (error) {
+      await t.rollback();
+      return res.status(500).json({ error: error.message });
+    }
+  },
+
+  // GET /api/transaccion/viajes/:id/detalle-completo
+  obtenerDetalleViajeCompleto: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const Vehiculo = require("../models/vehiculo.model");
+
+      const viaje = await Viaje.findByPk(id, {
+        include: [
+          {
+            model: Vehiculo,
+            as: 'vehiculo'
+          },
+          {
+            model: Usuario,
+            as: 'pasajera',
+            attributes: { exclude: ['contrasenia'] }
+          },
+          {
+            model: Usuario,
+            as: 'conductora',
+            attributes: { exclude: ['contrasenia'] }
+          },
+          {
+            model: SolicitudViaje,
+            as: 'solicitud'
+          }
+        ]
+      });
+
+      if (!viaje) return res.status(404).json({ error: "Viaje no encontrado" });
+      return res.json(viaje);
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  },
+
 };
 
 module.exports = transaccionesController;

@@ -36,5 +36,9 @@ router.put("/viajes/:id/inicio-viaje", verifyToken, ctrl.informarInicioViaje);
 router.put("/viajes/:id/finalizar", verifyToken, ctrl.informarFinViaje);
 router.put("/viajes/:id/cancelar", verifyToken, ctrl.cancelarEnRuta);
 
+// Endpoints Metodos de Pago
+router.put('/viajes/confirmar-efectivo', verifyToken, ctrl.confirmarPagoEfectivo);
+router.put('/viajes/confirmar-mercadopago', verifyToken, ctrl.confirmarPagoMercadoPago);
+router.get("/viajes/:id/detalle-completo", verifyToken, ctrl.obtenerDetalleViajeCompleto);
 
 module.exports = router;
