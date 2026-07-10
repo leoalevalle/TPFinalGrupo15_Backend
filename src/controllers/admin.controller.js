@@ -11,8 +11,7 @@ adminCtrl.listarSolicitudesAlta = async (req, res) => {
         // Buscamos todos los usuarios que sean Conductoras (rol 2) y que estén inactivas 
         const pendientes = await Usuario.findAll({
             where: {
-                rol: 2,
-                activo: false
+                rol: 2
             },
             order: [['createdAt', 'DESC']] // Ordenamos por fecha de creación, las más recientes primero
         });
