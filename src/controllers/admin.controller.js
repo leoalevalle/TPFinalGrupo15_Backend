@@ -5,6 +5,27 @@ const { Op, fn, col } = require("sequelize");
 
 const adminCtrl = {};
 
+// GET /api/admin/solicitudes-alta
+adminCtrl.listarSolicitudesAlta = async (req, res) => {
+    try {
+        // Buscamos todos los usuarios que sean Conductoras (rol 2) y que estén inactivas 
+        const pendientes = await Usuario.findAll({
+            where: {
+                rol: 2,
+                activo: false
+            },
+            order: [['createdAt', 'DESC']] // Ordenamos por fecha de creación, las más recientes primero
+        });
+
+        res.status(200).json({
+            status: '1',
+            data: pendientes
+        });
+    } catch (error) {
+        res.status(400).json({ status: '0', msg: 'Error al obtener solicitudes', error: error.message });
+    }
+};
+
 // PUT /api/admin/usuarios/:id/estado
 adminCtrl.cambiarEstadoLogicoUsuario = async (req, res) => {
   try {
@@ -130,7 +151,7 @@ adminCtrl.evaluarRegistroPasajera = async (req, res) => {
 adminCtrl.evaluarRegistroConductora = async (req, res) => {
   try {
     const { id } = req.params;
-    const { aprobar } = req.body; // true para habilitarla a trabajar, false para suspenderla
+    const { aprobar } = req.body; 
 
     if (aprobar === undefined || typeof aprobar !== "boolean") {
       return res.status(400).json({
@@ -159,7 +180,7 @@ adminCtrl.evaluarRegistroConductora = async (req, res) => {
 
     // 3. FILTRO DE SEGURIDAD: Validación estricta de género exclusivo
     const sexoValido = usuario.sexo.toLowerCase();
-    if (!sexoValido.includes("fem") && !sexoValido.includes("muj")) {
+    if (!sexoValido.includes("fem") && !sexoValido.includes("muj") && !sexoValido.includes("f")) {
       return res.status(403).json({
         status: "0",
         msg: "Filtro de seguridad rechazado: El plantel operativo de transporte es exclusivo para mujeres y disidencias.",
@@ -167,38 +188,39 @@ adminCtrl.evaluarRegistroConductora = async (req, res) => {
     }
 
     // 4. Actualizar estado administrativo e inicializar atributos de jornada
-    // Si se aprueba, nos aseguramos de que empiece con la jornada y disponibilidad en false
-    await usuario.update({
-      activo: aprobar, // Si la rechaza o suspende, su cuenta pasa a estar inactiva
-      enJornada: false,
-      disponible: false,
-    });
+    if (aprobar) {
+      await usuario.update({
+        activo: true,
+        aprobadaPorAdmin: true,
 
+      });
+    } else {
+      await usuario.update({
+        activo: false,
+        aprobadaPorAdmin: true
+      });
+    }
+
+    // 5. Armar mensaje y respuesta final
     const mensajeResultado = aprobar
       ? "Conductora aprobada y habilitada para iniciar jornadas laborales."
       : "Licencia/Admisión de la conductora suspendida o rechazada.";
 
-    res.status(200).json({
+    return res.status(200).json({
       status: "1",
       msg: mensajeResultado,
-      data: {
-        idUsuario: usuario.idUsuario,
-        nombre: usuario.nombre,
-        rol: usuario.rol,
-        sexo: usuario.sexo,
-        enJornada: usuario.enJornada,
-        disponible: usuario.disponible,
-        activo: usuario.activo,
-      },
+      data: usuario,
     });
+
   } catch (error) {
-    res.status(400).json({
+    return res.status(400).json({
       status: "0",
       msg: "Error al evaluar el registro de la conductora",
       error: error.message,
     });
   }
 };
+
 // PUT /api/admin/vehiculos/:id/estado
 adminCtrl.cambiarEstadoLogicoVehiculo = async (req, res) => {
   try {
