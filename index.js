@@ -3,7 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const sequelize = require("./config/database");
 const { cargarDatosDePrueba } = require("./config/seed");
-
+ 
 // Importación de rutas
 const helloRoutes = require("./src/routes/hello.routes");
 const authRoutes = require("./src/routes/auth.routes");
@@ -49,6 +49,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/transaccion", transaccionRoute);
 app.use("/api", conductoraRoute);
+//rutas para mercado pago 
+app.use('/api/mp', require('./src/routes/mp.route.js')); 
 
 // Settings
 app.set("port", process.env.PORT || 3000);
