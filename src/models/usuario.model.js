@@ -45,6 +45,12 @@ const Usuario = sequelize.define('Usuario', {
             notEmpty: { msg: 'La contraseña es requerida' }
         }
     },
+    loginGoogle: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
+
     activo: {
         type: DataTypes.BOOLEAN,
         allowNull: false,

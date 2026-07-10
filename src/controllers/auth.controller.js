@@ -221,4 +221,76 @@ authCtrl.loginGoogle = async (req, res) => {
     }
 }
 
+
+// REGISTRO AUTOMÁTICO DE PASAJERA CON GOOGLE
+authCtrl.registrarGooglePasajera = async (req, res) => {
+
+    try {
+        const { nombre, email } = req.body;
+        // Verificar si ya existe
+        const existe = await Usuario.findOne({
+            where: { email }
+        });
+        if (existe) {
+            return res.status(400).json({
+                status: "0",
+                msg: "Ya existe un usuario con ese correo."
+            });
+        }
+
+        // Generar nombre de usuario automático
+        // Generar nombre de usuario automático
+        const nomUsuario = email.split("@")[0];
+
+        // Crear pasajera
+        const nuevaPasajera = await Usuario.create({
+            nombre,
+            email,
+            telefono: "Sin registrar",
+            nomUsuario,
+            contrasenia: "GOOGLE_LOGIN",
+            sexo: "F",
+            rol: 1,
+            activo: true,
+            aprobadaPorAdmin: true,
+            loginGoogle: true
+        });
+
+        // Generar JWT
+        const token = jwt.sign(
+            {
+                idUsuario: nuevaPasajera.idUsuario,
+                rol: nuevaPasajera.rol
+            },
+            'PALABRA_SECRETA_TAXFEM_2026',
+            {
+                expiresIn: '24h'
+            }
+        );
+
+        res.status(201).json({
+            status: "1",
+            msg: "Registro con Google exitoso.",
+            token,
+            user: {
+                idUsuario: nuevaPasajera.idUsuario,
+                nombre: nuevaPasajera.nombre,
+                email: nuevaPasajera.email,
+                rol: nuevaPasajera.rol,
+                nomUsuario: nuevaPasajera.nomUsuario,
+                sexo: nuevaPasajera.sexo
+            }
+
+        });
+
+    }
+
+    catch (error) {
+        res.status(500).json({
+            status: "0",
+            msg: error.message
+        });
+    }
+};
+
 module.exports = authCtrl;
