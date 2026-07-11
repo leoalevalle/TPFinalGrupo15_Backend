@@ -17,8 +17,11 @@ router.put('/conductoras/:id/evaluar', adminCtrl.evaluarRegistroConductora);
 // Rutas para la gestión de vehículos
 router.put('/vehiculos/:id/estado', adminCtrl.cambiarEstadoLogicoVehiculo);
 router.put('/conductoras/:idConductora/cambiar-vehiculo', adminCtrl.gestionarCambioVehiculo);
+router.put('/conductoras/aprobar-vehiculo', adminCtrl.gestionarCambioVehiculo);
 // Ruta para obtener informe mensual
 router.get('/informe-mensual', adminCtrl.obtenerInformeMensual);
+
+router.get('/cambios-vehiculo-pendientes', adminCtrl.listarCambiosVehiculoPendientes);
 
 
 module.exports = router;

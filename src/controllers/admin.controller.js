@@ -11,8 +11,7 @@ adminCtrl.listarSolicitudesAlta = async (req, res) => {
         // Buscamos todos los usuarios que sean Conductoras (rol 2) y que estén inactivas 
         const pendientes = await Usuario.findAll({
             where: {
-                rol: 2,
-                activo: false
+                rol: 2
             },
             order: [['createdAt', 'DESC']] // Ordenamos por fecha de creación, las más recientes primero
         });
@@ -260,81 +259,65 @@ adminCtrl.cambiarEstadoLogicoVehiculo = async (req, res) => {
   }
 };
 
-// PUT /api/admin/conductoras/:idConductora/cambiar-vehiculo
+// PUT /api/admin/conductoras/aprobar-vehiculo
 adminCtrl.gestionarCambioVehiculo = async (req, res) => {
   try {
-    const { idConductora } = req.params;
-    const { idVehiculo, autorizar } = req.body; // idVehiculo a asignar y autorizar (true/false)
+    const { idConductora, idVehiculo, autorizar } = req.body;
 
-    if (
-      !idVehiculo ||
-      autorizar === undefined ||
-      typeof autorizar !== "boolean"
-    ) {
-      return res.status(400).json({
-        status: "0",
-        msg: "Los campos idVehiculo y autorizar (booleano) son requeridos",
-      });
-    }
-
-    // 1. Validar que la conductora exista y tenga el rol correcto
-    const conductora = await Usuario.findByPk(idConductora);
-    if (!conductora || conductora.rol !== 2) {
-      return res.status(400).json({
-        status: "0",
-        msg: "La usuaria no existe o no corresponde al rol de Conductora",
-      });
-    }
-
-    // 2. Validar que el vehículo exista y esté activo
+    const conductora = await Usuario.findByPk(idConductora); 
     const vehiculo = await Vehiculo.findByPk(idVehiculo);
-    if (!vehiculo) {
-      return res.status(404).json({
-        status: "0",
-        msg: "El vehículo que intenta asignar no existe",
-      });
+
+    if (!vehiculo || !conductora) {
+      return res.status(404).json({ error: 'Conductora o Vehículo no encontrado.' });
     }
 
-    if (!vehiculo.activo) {
-      return res.status(400).json({
-        status: "0",
-        msg: "No se puede asignar este vehículo porque está dado de baja o inactivo",
-      });
-    }
-
-    // 3. Procesar la autorización de la Administradora
     if (!autorizar) {
-      return res.status(200).json({
-        status: "1",
-        msg: "El cambio de vehículo fue rechazado por la Administradora. El auto sigue libre.",
-      });
+      // 🔴 Si lo rechaza, solo limpiamos la solicitud para que pueda pedir otro
+      await conductora.update({ idVehiculoSolicitado: null });
+      return res.status(200).json({ status: '1', message: 'Cambio de vehículo rechazado por la Administradora.' });
     }
 
-    // 4. Lógica de negocio: Desvincular el vehículo anterior si esa conductora ya tenía uno
-    await Vehiculo.update(
-      { idConductoraAsociada: null },
-      { where: { idConductoraAsociada: idConductora } },
-    );
+    // 🟢 Si lo aprueba:
+    // 1. Desvinculamos el vehículo viejo de la conductora
+    await Vehiculo.update({ idConductoraAsociada: null }, { where: { idConductoraAsociada: idConductora } });
 
-    // 5. Vincular el nuevo vehículo a la conductora
-    await vehiculo.update({ idConductoraAsociada: idConductora });
+    // 2. Vinculamos el nuevo vehículo
+    vehiculo.idConductoraAsociada = idConductora;
+    await vehiculo.save();
 
-    res.status(200).json({
-      status: "1",
-      msg: `Vehículo asignado exitosamente a la conductora ${conductora.nombre}`,
-      data: {
-        idConductora: conductora.idUsuario,
-        nombreConductora: conductora.nombre,
-        idVehiculo: vehiculo.idVehiculo,
-        patente: vehiculo.patente,
-      },
+    // 3. Limpiamos la solicitud pendiente en la conductora
+    await conductora.update({ idVehiculoSolicitado: null });
+
+    return res.status(200).json({ 
+      status: '1',
+      message: 'Cambio aprobado exitosamente.',
+      vehiculo 
     });
   } catch (error) {
-    res.status(400).json({
-      status: "0",
-      msg: "Error al gestionar el cambio de vehículo",
-      error: error.message,
+    return res.status(500).json({ error: 'Error al gestionar el cambio.', details: error.message });
+  }
+};
+
+// GET /api/admin/cambios-vehiculo-pendientes
+adminCtrl.listarCambiosVehiculoPendientes = async (req, res) => {
+  try {
+    const solicitudes = await Usuario.findAll({
+      where: {
+        rol: 2,
+        idVehiculoSolicitado: {
+          [Op.ne]: null 
+        }
+      },
+      attributes: ['idUsuario', 'nombre', 'email', 'idVehiculoSolicitado']
     });
+
+    return res.status(200).json({
+      status: '1',
+      data: solicitudes
+    });
+  } catch (error) {
+    console.error("🚨 Error en listarCambiosVehiculoPendientes:", error);
+    return res.status(400).json({ status: '0', error: error.message });
   }
 };
 //=================================================================================================

@@ -1,5 +1,7 @@
 const Conductora = require('../models/conductora.model');
 const Vehiculo = require('../models/vehiculo.model');
+const { listarCambiosVehiculoPendientes } = require('./admin.controller');
+const { Usuario } = require('../models/usuario.model');
 
 // PUT /api/conductoras/jornada/inicio
 const iniciarJornada = async (req, res) => {
@@ -56,21 +58,22 @@ const solicitarCambioVehiculo = async (req, res) => {
   try {
     const { idConductora, idNuevoVehiculo } = req.body;
 
-    const conductora = await Conductora.findByPk(idConductora);
+    const conductora = await Conductora.findByPk(idConductora); 
     const vehiculo = await Vehiculo.findByPk(idNuevoVehiculo);
 
     if (!conductora || !vehiculo) {
       return res.status(404).json({ error: 'Conductora o Vehículo no encontrado.' });
     }
+    await conductora.update({
+      idVehiculoSolicitado: idNuevoVehiculo
+    });
 
-    console.log(`[PETICIÓN] La conductora ${idConductora} solicita cambiar al vehículo ${idNuevoVehiculo}`);
-
-    res.status(201).json({ 
-      message: 'Petición de cambio de vehículo registrada. Pendiente de aprobación por la Administradora.',
-      solicitud: { idConductora, idNuevoVehiculo, fecha: new Date() }
+    return res.status(200).json({ 
+      status: '1',
+      message: 'Petición de cambio de vehículo registrada. Pendiente de aprobación por la Administradora.'
     });
   } catch (error) {
-    res.status(500).json({ error: 'Error al procesar la solicitud de cambio.', details: error.message });
+    return res.status(500).json({ error: 'Error al procesar la solicitud.', details: error.message });
   }
 };
 
