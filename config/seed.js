@@ -2,9 +2,11 @@ const Usuario = require('../src/models/usuario.model');
 const Conductora = require('../src/models/conductora.model');
 const Vehiculo = require('../src/models/vehiculo.model');
 const Viaje = require('../src/models/viaje.model');
+const SolicitudViaje = require('../src/models/solicitud.model');
 
 const cargarDatosDePrueba = async () => {
   try {
+
     // 1. Verificamos si ya hay datos de conductoras para no duplicar todo el bloque inicial
     const cantidadUsuarios = await Conductora.count();
     if (cantidadUsuarios > 0) {
@@ -109,7 +111,19 @@ const cargarDatosDePrueba = async () => {
       idConductoraAsociada: chofer2.idUsuario
     });
     console.log('🌱 Insertando historial analítico de viajes para Junio...');
+    console.log('🌱 Creando solicitudes de origen para el historial...');
     
+    // Creamos las solicitudes correspondientes para cumplir la llave foránea
+    await SolicitudViaje.bulkCreate([
+      { idSolicitud: 101, idPasajera: pasajera.idUsuario, origen: 'Calle Falsa 123', destino: 'Destino A', zona: 'Centro', estado: 'Aceptada' },
+      { idSolicitud: 102, idPasajera: pasajera.idUsuario, origen: 'Av. Siempre Viva 742', destino: 'Destino B', zona: 'Norte', estado: 'Aceptada' },
+      { idSolicitud: 103, idPasajera: pasajera.idUsuario, origen: 'Ruta 9 Km 10', destino: 'Destino C', zona: 'Sur', estado: 'Aceptada' },
+      { idSolicitud: 104, idPasajera: pasajera.idUsuario, origen: 'Belgrano 450', destino: 'Destino D', zona: 'Centro', estado: 'Aceptada' },
+      { idSolicitud: 105, idPasajera: pasajera.idUsuario, origen: 'Alvear 900', destino: 'Destino E', zona: 'Oeste', estado: 'Aceptada' }
+    ]);
+
+    console.log('🌱 Insertando historial analítico de viajes para Junio...');
+    // ... (aquí continúa tu código original de Viaje.create sin cambios)
     // Viaje Completado 1 (Mariana - Finalizado)
     await Viaje.create({
       idSolicitudOrigen: 101,
