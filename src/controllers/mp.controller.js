@@ -1,14 +1,15 @@
 const axios = require("axios"); 
 const mpCtrl = {} 
- mpCtrl.getPaymentlink = async (req, res) => { 
-    // Recibimos los datos reales que viajan desde la app
-    const { payer_email, monto, idViaje } = req.body; 
+
+mpCtrl.getPaymentlink = async (req, res) => { 
+    const { payer_email, monto, idViaje } = req.body;
 
     try { 
         const url = "https://api.mercadopago.com/checkout/preferences"; 
         const body = { 
-          // Usamos el mail de la pasajera o uno de respaldo por defecto
-          payer_email: payer_email || "pasajera@taxifem.com", 
+          payer: {
+            email: payer_email && payer_email.includes('@') ? payer_email.trim() : "pasajera@taxifem.com"
+          }, 
           items: [ 
             { 
               id: idViaje ? idViaje.toString() : "1",
@@ -17,17 +18,16 @@ const mpCtrl = {}
               picture_url: "http://www.myapp.com/myimage.jpg", 
               category_id: "travel", 
               quantity: 1, 
-              unit_price: monto ? parseFloat(monto) : 3500 // El precio dinámico calculado por tu app
+              unit_price: monto ? parseFloat(monto) : 3500 
             } 
           ], 
- 
           back_urls: { 
             failure: "http://localhost:4200/pago/fallido", 
             pending: "http://localhost:4200/pago/pendiente", 
             success: "http://localhost:4200/pago/exitoso" 
           },
-          auto_return: "approved",
-          // Guardamos el ID del viaje acá para poder actualizar la BD al volver
+
+          notification_url: "https://tu-api.com/api/mercadopago/webhook",
           external_reference: idViaje ? idViaje.toString() : "0"
         }; 
  
@@ -41,7 +41,11 @@ const mpCtrl = {}
         return res.status(200).json(payment.data); 
  
     } catch (error) { 
-        console.log(error); 
+        if (error.response && error.response.data) {
+            console.error("ERROR DETALLADO DE MERCADO PAGO:", JSON.stringify(error.response.data, null, 2));
+        } else {
+            console.error("ERROR GENERAL:", error.message);
+        } 
  
         return res.status(500).json({ 
             error: true, msg: "Failed to create payment"  
@@ -50,7 +54,6 @@ const mpCtrl = {}
 }
  
 mpCtrl.getSubscriptionLink = async (req, res) => { 
-    //recibir en body info de payer_email, razon, cantidad 
     try { 
         const url = "https://api.mercadopago.com/preapproval"; 
  
@@ -72,11 +75,11 @@ mpCtrl.getSubscriptionLink = async (req, res) => {
                 Authorization: `Bearer ${process.env.ACCESS_TOKEN}` 
             } 
         }); 
-    return res.status(200).json(subscription.data); 
-} catch (error) {  
-    console.log(error); 
-    return res.status(500).json({ 
-        error: true, msg: "Failed to create subscription"  
+        return res.status(200).json(subscription.data); 
+    } catch (error) {  
+        console.log(error); 
+        return res.status(500).json({ 
+            error: true, msg: "Failed to create subscription"  
         });         
     } 
 } 

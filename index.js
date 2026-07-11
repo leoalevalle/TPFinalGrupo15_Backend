@@ -10,6 +10,7 @@ const authRoutes = require("./src/routes/auth.routes");
 const adminRoutes = require("./src/routes/admin.routes");
 const conductoraRoute = require("./src/routes/conductora.route");
 const transaccionRoute = require("./src/routes/transacciones.route");
+const mpRoutes = require('./src/routes/mp.routes.js'); 
 
 // === IMPORTACIÓN DE MODELOS PARA LAS RELACIONES ===
 const Usuario = require("./src/models/usuario.model");
@@ -62,7 +63,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/transaccion", transaccionRoute);
 app.use("/api", conductoraRoute);
 //rutas para mercado pago 
-app.use('/api/mp', require('./src/routes/mp.route.js')); 
+app.use("/api/mp", mpRoutes); 
 
 // Settings
 app.set("port", process.env.PORT || 3000);
