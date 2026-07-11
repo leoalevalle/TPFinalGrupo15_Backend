@@ -9,6 +9,162 @@ servers:
 
 paths:
   # --------------------------------------------------------
+  # RUTAS DE AUTENTICACIÓN
+  # --------------------------------------------------------
+  /auth/login:
+    post:
+      summary: Iniciar sesión
+      tags:
+        - Autenticación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nomUsuario:
+                  type: string
+                  example: "ana_pasajera"
+                contrasenia:
+                  type: string
+                  example: "ana123"
+      responses:
+        200:
+          description: Sesión iniciada con éxito.
+        401:
+          description: Credenciales inválidas.
+
+  /auth/login-google:
+    post:
+      summary: Iniciar sesión con Google
+      tags:
+        - Autenticación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: "usuario@gmail.com"
+      responses:
+        200:
+          description: Sesión iniciada con Google con éxito.
+        404:
+          description: Usuario no encontrado.
+
+  /auth/register-google-pasajera:
+    post:
+      summary: Registrar pasajera automáticamente con Google
+      tags:
+        - Autenticación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre:
+                  type: string
+                  example: "María García"
+                email:
+                  type: string
+                  example: "maria@gmail.com"
+      responses:
+        201:
+          description: Pasajera registrada con éxito.
+        400:
+          description: Error en el registro.
+
+  /auth/register:
+    post:
+      summary: Registrar pasajera
+      tags:
+        - Autenticación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre:
+                  type: string
+                  example: "María García"
+                telefono:
+                  type: string
+                  example: "3884719533"
+                email:
+                  type: string
+                  example: "maria@gmail.com"
+                nomUsuario:
+                  type: string
+                  example: "maria_pasajera"
+                contrasenia:
+                  type: string
+                  example: "maria12345"
+                sexo:
+                  type: string
+                  example: "F"
+      responses:
+        201:
+          description: Pasajera registrada con éxito.
+        400:
+          description: Error en el registro (género no válido o datos incompletos).
+
+  /auth/register-conductora:
+    post:
+      summary: Registrar conductora
+      tags:
+        - Autenticación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre:
+                  type: string
+                  example: "Valentina Gómez"
+                telefono:
+                  type: string
+                  example: "555444333"
+                email:
+                  type: string
+                  example: "valen@mail.com"
+                nomUsuario:
+                  type: string
+                  example: "valen_chofer"
+                contrasenia:
+                  type: string
+                  example: "valen123"
+                sexo:
+                  type: string
+                  example: "F"
+                marca:
+                  type: string
+                  example: "Fiat"
+                modelo:
+                  type: string
+                  example: "Cronos"
+                color:
+                  type: string
+                  example: "Blanco"
+                patente:
+                  type: string
+                  example: "AF123JK"
+      responses:
+        201:
+          description: Conductora registrada con éxito (requiere aprobación de admin).
+        400:
+          description: Error en el registro.
+
+  # --------------------------------------------------------
   # RUTAS DE CONDUCTORAS
   # --------------------------------------------------------
   /conductoras/jornada/inicio:
@@ -117,6 +273,17 @@ paths:
           description: Datos de la conductora devueltos con éxito.
         404:
           description: Conductora no encontrada.
+
+  /admin/cambios-vehiculo-pendientes:
+    get:
+      summary: Listar solicitudes de cambio de vehículo pendientes
+      tags:
+        - Admin - Vehículos
+      responses:
+        200:
+          description: Listado de cambios pendientes obtenido con éxito.
+        500:
+          description: Error interno del servidor.
 
   # --------------------------------------------------------
   # RUTAS DE ADMINISTRACIÓN / VEHÍCULOS
@@ -229,3 +396,460 @@ paths:
           description: Solicitud gestionada con éxito.
         400:
           description: Error al procesar la aprobación/rechazo.
+
+  # --------------------------------------------------------
+  # RUTAS DE TRANSACCIONES / VIAJES
+  # --------------------------------------------------------
+  /solicitudes:
+    post:
+      summary: Crear solicitud de viaje (Pasajera)
+      tags:
+        - Transacciones - Solicitudes
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idPasajera:
+                  type: integer
+                  example: 1
+                origen:
+                  type: string
+                  example: "Av. Belgrano 123"
+                destino:
+                  type: string
+                  example: "Terminal de ómnibus"
+                zona:
+                  type: string
+                  example: "Centro"
+                cantPasajeros:
+                  type: integer
+                  example: 2
+      responses:
+        201:
+          description: Solicitud creada con éxito.
+        400:
+          description: Error en los datos enviados.
+
+  /solicitudes/{id}/cancelar:
+    put:
+      summary: Cancelar solicitud de viaje (Pasajera)
+      tags:
+        - Transacciones - Solicitudes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la solicitud a cancelar
+          schema:
+            type: integer
+            example: 5
+      responses:
+        200:
+          description: Solicitud cancelada con éxito.
+        404:
+          description: Solicitud no encontrada.
+
+  /operadora/solicitudes:
+    get:
+      summary: Listar solicitudes pendientes (Operadora)
+      tags:
+        - Transacciones - Operadora
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Listado de solicitudes pendientes obtenido con éxito.
+        401:
+          description: No autorizado.
+
+  /operadora/solicitudes-aceptadas:
+    get:
+      summary: Listar solicitudes aceptadas (Operadora)
+      tags:
+        - Transacciones - Operadora
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Listado de solicitudes aceptadas obtenido con éxito.
+        401:
+          description: No autorizado.
+
+  /operadora/conductoras-zona:
+    get:
+      summary: Consultar conductoras disponibles por zona (Operadora)
+      tags:
+        - Transacciones - Operadora
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: zona
+          in: query
+          required: true
+          description: Zona a buscar conductoras
+          schema:
+            type: string
+            example: "Centro"
+      responses:
+        200:
+          description: Listado de conductoras disponibles obtenido con éxito.
+        401:
+          description: No autorizado.
+
+  /operadora/asignar-propuesta:
+    put:
+      summary: Asignar conductora a solicitud (Operadora)
+      tags:
+        - Transacciones - Operadora
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idSolicitud:
+                  type: integer
+                  example: 5
+                idConductora:
+                  type: integer
+                  example: 3
+      responses:
+        200:
+          description: Propuesta asignada con éxito.
+        400:
+          description: Error en la asignación.
+
+  /conductoras/solicitudes/propuesta:
+    get:
+      summary: Obtener propuesta activa (Conductora)
+      tags:
+        - Transacciones - Conductora
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Propuesta activa obtenida con éxito.
+        404:
+          description: No hay propuesta activa.
+
+  /conductoras/viajes/activo:
+    get:
+      summary: Obtener viaje activo (Conductora)
+      tags:
+        - Transacciones - Conductora
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Viaje activo obtenido con éxito.
+        404:
+          description: No hay viaje activo.
+
+  /conductoras/solicitudes/{id}/responder:
+    put:
+      summary: Responder propuesta de viaje (Conductora)
+      tags:
+        - Transacciones - Conductora
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la solicitud a responder
+          schema:
+            type: integer
+            example: 5
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                aceptar:
+                  type: boolean
+                  example: true
+      responses:
+        200:
+          description: Propuesta respondida con éxito.
+        400:
+          description: Error al responder la propuesta.
+
+  /conductoras/resumen:
+    get:
+      summary: Obtener resumen diario (Conductora)
+      tags:
+        - Transacciones - Conductora
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Resumen diario obtenido con éxito.
+        401:
+          description: No autorizado.
+
+  /viajes:
+    post:
+      summary: Registrar viaje (Operadora)
+      tags:
+        - Transacciones - Viajes
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idSolicitud:
+                  type: integer
+                  example: 5
+                idConductora:
+                  type: integer
+                  example: 3
+                idPasajera:
+                  type: integer
+                  example: 1
+      responses:
+        201:
+          description: Viaje registrado con éxito.
+        400:
+          description: Error en el registro.
+
+  /viajes/{id}/llegue_origen:
+    put:
+      summary: Informar llegada al origen (Conductora)
+      tags:
+        - Transacciones - Viajes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del viaje
+          schema:
+            type: integer
+            example: 10
+      responses:
+        200:
+          description: Llegada al origen informada con éxito.
+        404:
+          description: Viaje no encontrado.
+
+  /viajes/{id}/inicio-viaje:
+    put:
+      summary: Informar inicio del viaje (Conductora)
+      tags:
+        - Transacciones - Viajes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del viaje
+          schema:
+            type: integer
+            example: 10
+      responses:
+        200:
+          description: Inicio de viaje informado con éxito.
+        404:
+          description: Viaje no encontrado.
+
+  /viajes/{id}/finalizar:
+    put:
+      summary: Informar fin del viaje (Conductora)
+      tags:
+        - Transacciones - Viajes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del viaje
+          schema:
+            type: integer
+            example: 10
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                montoFinal:
+                  type: number
+                  example: 1500
+                metodoPago:
+                  type: string
+                  example: "Efectivo"
+      responses:
+        200:
+          description: Fin de viaje informado con éxito.
+        404:
+          description: Viaje no encontrado.
+
+  /viajes/{id}/cancelar:
+    put:
+      summary: Cancelar viaje en ruta (Conductora)
+      tags:
+        - Transacciones - Viajes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del viaje
+          schema:
+            type: integer
+            example: 10
+      responses:
+        200:
+          description: Viaje cancelado con éxito.
+        404:
+          description: Viaje no encontrado.
+
+  # --------------------------------------------------------
+  # RUTAS DE ADMINISTRACIÓN
+  # --------------------------------------------------------
+  /solicitudes-alta:
+    get:
+      summary: Listar solicitudes de alta (conductoras inactivas)
+      tags:
+        - Administración
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Listado de solicitudes de alta obtenido con éxito.
+        401:
+          description: No autorizado.
+
+  /usuarios/{id}/estado:
+    put:
+      summary: Cambiar estado lógico de usuario
+      tags:
+        - Administración
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del usuario
+          schema:
+            type: integer
+            example: 5
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                activo:
+                  type: boolean
+                  example: true
+      responses:
+        200:
+          description: Estado del usuario actualizado con éxito.
+        404:
+          description: Usuario no encontrado.
+
+  /pasajeras/{id}/evaluar:
+    put:
+      summary: Evaluar registro de pasajera (aprobar/rechazar)
+      tags:
+        - Administración
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la pasajera
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                aprobada:
+                  type: boolean
+                  example: true
+      responses:
+        200:
+          description: Registro de pasajera evaluado con éxito.
+        404:
+          description: Pasajera no encontrada.
+
+  /conductoras/{id}/evaluar:
+    put:
+      summary: Evaluar registro de conductora (aprobar/rechazar)
+      tags:
+        - Administración
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID de la conductora
+          schema:
+            type: integer
+            example: 3
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                aprobada:
+                  type: boolean
+                  example: true
+      responses:
+        200:
+          description: Registro de conductora evaluado con éxito.
+        404:
+          description: Conductora no encontrada.
+
+  /informe-mensual:
+    get:
+      summary: Obtener informe mensual de estadísticas
+      tags:
+        - Administración
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Informe mensual obtenido con éxito.
+        401:
+          description: No autorizado.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
