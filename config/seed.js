@@ -1,6 +1,7 @@
 const Usuario = require('../src/models/usuario.model');
 const Conductora = require('../src/models/conductora.model');
 const Vehiculo = require('../src/models/vehiculo.model');
+const Viaje = require('../src/models/viaje.model');
 
 const cargarDatosDePrueba = async () => {
   try {
@@ -106,6 +107,83 @@ const cargarDatosDePrueba = async () => {
       patente: 'AD555BB',
       activo: false,
       idConductoraAsociada: chofer2.idUsuario
+    });
+    console.log('🌱 Insertando historial analítico de viajes para Junio...');
+    
+    // Viaje Completado 1 (Mariana - Finalizado)
+    await Viaje.create({
+      idSolicitudOrigen: 101,
+      idPasajera: pasajera.idUsuario,
+      idConductora: chofer1.idUsuario,
+      idOperadoraAsignadora: operadora.idUsuario, // Paola asignó el viaje
+      patenteVehiculoUtilizado: 'AE123MZ',       // El Toyota Etios de Mariana
+      fecha: '2026-06-10',                       // DATEONLY acepta string 'YYYY-MM-DD'
+      horarioCaminoOrigen: new Date('2026-06-10T14:15:00'),
+      horarioInicio: new Date('2026-06-10T14:30:00'),
+      horarioFin: new Date('2026-06-10T15:00:00'),
+      estadoViaje: 'Finalizado',
+      monto: 3500.00
+    });
+
+    // Viaje Completado 2 (Mariana - Finalizado)
+    await Viaje.create({
+      idSolicitudOrigen: 102,
+      idPasajera: pasajera.idUsuario,
+      idConductora: chofer1.idUsuario,
+      idOperadoraAsignadora: operadora.idUsuario,
+      patenteVehiculoUtilizado: 'AE123MZ',
+      fecha: '2026-06-18',
+      horarioCaminoOrigen: new Date('2026-06-18T18:00:00'),
+      horarioInicio: new Date('2026-06-18T18:15:00'),
+      horarioFin: new Date('2026-06-18T18:45:00'),
+      estadoViaje: 'Finalizado',
+      monto: 4200.00
+    });
+
+    // Viaje Completado 3 (Gabriela - Finalizado)
+    // Nota: Aunque su auto propio esté inactivo en el taller, simulamos que usó el Cronos libre 'AF987XX'
+    await Viaje.create({
+      idSolicitudOrigen: 103,
+      idPasajera: pasajera.idUsuario,
+      idConductora: chofer2.idUsuario,
+      idOperadoraAsignadora: operadora.idUsuario,
+      patenteVehiculoUtilizado: 'AF987XX', 
+      fecha: '2026-06-22',
+      horarioCaminoOrigen: new Date('2026-06-22T08:45:00'),
+      horarioInicio: new Date('2026-06-22T09:00:00'),
+      horarioFin: new Date('2026-06-22T09:35:00'),
+      estadoViaje: 'Finalizado',
+      monto: 5100.00
+    });
+
+    // Viaje Cancelado 1 (Mariana - Cancelado en Ruta)
+    await Viaje.create({
+      idSolicitudOrigen: 104,
+      idPasajera: pasajera.idUsuario,
+      idConductora: chofer1.idUsuario,
+      idOperadoraAsignadora: operadora.idUsuario,
+      patenteVehiculoUtilizado: 'AE123MZ',
+      fecha: '2026-06-15',
+      horarioCaminoOrigen: new Date('2026-06-15T10:45:00'),
+      horarioInicio: new Date('2026-06-15T11:00:00'),
+      horarioFin: null, // No terminó porque se canceló en viaje
+      estadoViaje: 'Cancelado en Ruta',
+      monto: 0.00
+    });
+
+    // Viaje Cancelado 2 (Gabriela - Cancelado en Ruta)
+    await Viaje.create({
+      idSolicitudOrigen: 105,
+      idPasajera: pasajera.idUsuario,
+      idConductora: chofer2.idUsuario,
+      idOperadoraAsignadora: operadora.idUsuario,
+      patenteVehiculoUtilizado: 'AF987XX',
+      fecha: '2026-06-28',
+      horarioCaminoOrigen: new Date('2026-06-28T22:30:00'),
+      horarioInicio: null, // Se canceló antes de empezar el viaje formalmente
+      horarioFin: null,
+      estadoViaje: 'Cancelado en Ruta',
+      monto: 0.00
     });
 
     console.log('✅ ¡Datos de prueba cargados exitosamente!');

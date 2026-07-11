@@ -10,6 +10,7 @@ router.get('/solicitudes-alta', adminCtrl.listarSolicitudesAlta);
 router.put('/usuarios/:id/estado', adminCtrl.cambiarEstadoLogicoUsuario);
 // Ruta para aprobar / rechazar registro de pasajera
 router.put('/pasajeras/:id/evaluar', adminCtrl.evaluarRegistroPasajera);
+router.get('/pasajeras', adminCtrl.listarPasajeras);
 
 //habilitar o deshabilitar conductora
 router.put('/conductoras/:id/evaluar', adminCtrl.evaluarRegistroConductora);
