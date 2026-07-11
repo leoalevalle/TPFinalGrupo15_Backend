@@ -847,6 +847,42 @@ paths:
         401:
           description: No autorizado.
 
+  /conductoras/{idConductora}/cambiar-vehiculo:
+    put:
+      summary: Gestionar cambio de vehículo de conductora (aprobar/rechazar)
+      tags:
+        - Administración
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: idConductora
+          in: path
+          required: true
+          description: ID de la conductora
+          schema:
+            type: integer
+            example: 3
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                idVehiculo:
+                  type: integer
+                  example: 2
+                autorizar:
+                  type: boolean
+                  example: true
+      responses:
+        200:
+          description: Cambio de vehículo gestionado con éxito.
+        404:
+          description: Conductora o vehículo no encontrado.
+        500:
+          description: Error interno del servidor.
+
 components:
   securitySchemes:
     bearerAuth:
