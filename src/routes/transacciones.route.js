@@ -4,11 +4,7 @@ const router = express.Router();
 const ctrl = require("../controllers/transacciones.controller");
 const { verifyToken } = require("../middlewares/auth.middleware");
 const { verify } = require("jsonwebtoken");
-
-console.log("¿Controlador cargado correctamente?:", !!ctrl);
-if (ctrl) {
-  console.log("¿Existe crearSolicitudViaje?:", typeof ctrl.crearSolicitudViaje);
-}
+const mpCtrl = require("../controllers/mp.controller");
 
 console.log(typeof autCtrl.verifyToken);
 console.log(typeof verifyToken);
@@ -36,5 +32,13 @@ router.put("/viajes/:id/inicio-viaje", verifyToken, ctrl.informarInicioViaje);
 router.put("/viajes/:id/finalizar", verifyToken, ctrl.informarFinViaje);
 router.put("/viajes/:id/cancelar", verifyToken, ctrl.cancelarEnRuta);
 
+// Endpoints Metodos de Pago
+router.put('/viajes/confirmar-efectivo', verifyToken, ctrl.confirmarPagoEfectivo);
+router.put('/viajes/confirmar-mercadopago', verifyToken, ctrl.confirmarPagoMercadoPago);
+router.get("/viajes/:id/detalle-completo", ctrl.obtenerDetalleViajeCompleto);
+router.post("/viajes/:idViaje/crear-preferencia-mp", verifyToken, (req, res, next) => {
+    req.body.idViaje = req.params.idViaje;
+    next();
+}, mpCtrl.getPaymentlink);
 
 module.exports = router;

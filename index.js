@@ -3,18 +3,22 @@ const express = require("express");
 const cors = require("cors");
 const sequelize = require("./config/database");
 const { cargarDatosDePrueba } = require("./config/seed");
-
+ 
 // Importación de rutas
 const helloRoutes = require("./src/routes/hello.routes");
 const authRoutes = require("./src/routes/auth.routes");
 const adminRoutes = require("./src/routes/admin.routes");
 const conductoraRoute = require("./src/routes/conductora.route");
 const transaccionRoute = require("./src/routes/transacciones.route");
+const mpRoutes = require('./src/routes/mp.routes.js'); 
 
 // === IMPORTACIÓN DE MODELOS PARA LAS RELACIONES ===
 const Usuario = require("./src/models/usuario.model");
 const Vehiculo = require("./src/models/vehiculo.model");
 const Conductora = require("./src/models/conductora.model");
+const Viaje = require("./src/models/viaje.model");
+const SolicitudViaje = require("./src/models/solicitud.model");
+
 //const Vehiculo = require('./src/models/vehiculo.model');
 
 // === DEFINICION DE RELACIONES ===
@@ -27,6 +31,15 @@ Vehiculo.belongsTo(Usuario, {
   foreignKey: "idConductoraAsociada",
   as: "datosConductora",
 });
+
+// Un viaje pertenece a una Pasajera (Usuario)
+Viaje.belongsTo(Usuario, { foreignKey: "idPasajera", as: "pasajera" });
+// Un viaje pertenece a una Conductora (Usuario)
+Viaje.belongsTo(Usuario, { foreignKey: "idConductora", as: "conductora" });
+// Un viaje se origina de una Solicitud
+Viaje.belongsTo(SolicitudViaje, { foreignKey: "idSolicitudOrigen", as: "solicitud" });
+// Un viaje utiliza un vehículo identificándolo por su patente
+Viaje.belongsTo(Vehiculo, { foreignKey: "patenteVehiculoUtilizado", targetKey: "patente", as: "vehiculo" });
 
 // === Configuración de Swagger ===
 const swaggerUi = require("swagger-ui-express");
@@ -49,6 +62,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/transaccion", transaccionRoute);
 app.use("/api", conductoraRoute);
+//rutas para mercado pago 
+app.use("/api/mp", mpRoutes); 
 
 // Settings
 app.set("port", process.env.PORT || 3000);

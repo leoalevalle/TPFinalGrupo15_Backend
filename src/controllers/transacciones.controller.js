@@ -2,6 +2,7 @@ const SolicitudViaje = require("../models/solicitud.model");
 const Viaje = require("../models/viaje.model");
 const Usuario = require("../models/usuario.model");
 const sequelize = require("../../config/database");
+const mpCtrl = require("../controllers/mp.controller");
 
 const transaccionesController = {
   // POST /api/solicitudes
@@ -335,11 +336,6 @@ const transaccionesController = {
 
       await viaje.save();
 
-      await Usuario.update(
-        { disponible: true },
-        { where: { idUsuario: viaje.idConductora } },
-      );
-
       return res.json({ message: "Viaje finalizado con éxito", viaje });
     } catch (error) {
       return res.status(500).json({ error: error.message });
@@ -374,7 +370,7 @@ const transaccionesController = {
         const segundos = Math.abs(ahora - new Date(fechaInicioReal)) / 1000;
         viaje.monto = parseFloat((0.0400 + segundos * 1.5).toFixed(2));
       }else{
-        viaje.mont = 0;
+        viaje.monto = 0;
       }
       
       await viaje.save();
@@ -440,62 +436,62 @@ const transaccionesController = {
 
   // PUT /api/conductoras/solicitudes/:id/responder
   responderPropuesta: async (req, res) => {
-  const t = await sequelize.transaction();
-  
-  try {
-    const usuarioAutenticado = await Usuario.findByPk(req.userId, { transaction: t });
-    if (!usuarioAutenticado || usuarioAutenticado.rol !== 2) {
-      await t.rollback();
-      return res.status(403).json({
-        error: "Acceso denegado. Solo las conductoras pueden responder propuestas.",
-      });
-    }
+    const t = await sequelize.transaction();
     
-    const { id } = req.params;
-    const { aceptar } = req.body;
-    
-    const solicitud = await SolicitudViaje.findByPk(id, { transaction: t });
-    if (!solicitud) {
-      await t.rollback();
-      return res.status(404).json({ error: "Solicitud no encontrada" });
-    }
-
-    if (aceptar) {
-      solicitud.estado = 'Aceptada';
-      await solicitud.save({ transaction: t });
-
-      const conductoraPerfil = await Usuario.findOne({ where: { idUsuario: req.userId } });
-      if (conductoraPerfil) {
-        conductoraPerfil.disponible = false;
-        await conductoraPerfil.save({ transaction: t });
+    try {
+      const usuarioAutenticado = await Usuario.findByPk(req.userId, { transaction: t });
+      if (!usuarioAutenticado || usuarioAutenticado.rol !== 2) {
+        await t.rollback();
+        return res.status(403).json({
+          error: "Acceso denegado. Solo las conductoras pueden responder propuestas.",
+        });
+      }
+      
+      const { id } = req.params;
+      const { aceptar } = req.body;
+      
+      const solicitud = await SolicitudViaje.findByPk(id, { transaction: t });
+      if (!solicitud) {
+        await t.rollback();
+        return res.status(404).json({ error: "Solicitud no encontrada" });
       }
 
-      await t.commit();
-      return res.json({ 
-        message: "Propuesta aceptada con éxito y conductora asignada al servicio.", 
-        solicitud 
-      });
+      if (aceptar) {
+        solicitud.estado = 'Aceptada';
+        await solicitud.save({ transaction: t });
 
-    } else {
-      solicitud.idConductoraAsignada = null;
-      solicitud.estado = 'Pendiente';
-      await solicitud.save({ transaction: t });
+        const conductoraPerfil = await Usuario.findOne({ where: { idUsuario: req.userId } });
+        if (conductoraPerfil) {
+          conductoraPerfil.disponible = false;
+          await conductoraPerfil.save({ transaction: t });
+        }
 
-      usuarioAutenticado.disponible = true; 
-      await usuarioAutenticado.save({ transaction: t });
+        await t.commit();
+        return res.json({ 
+          message: "Propuesta aceptada con éxito y conductora asignada al servicio.", 
+          solicitud 
+        });
 
-      await t.commit();
-      return res.json({
-        message: "Propuesta rechazada. Reabierta en el panel de control y conductora liberada.",
-        solicitud,
-      });
+      } else {
+        solicitud.idConductoraAsignada = null;
+        solicitud.estado = 'Pendiente';
+        await solicitud.save({ transaction: t });
+
+        usuarioAutenticado.disponible = true; 
+        await usuarioAutenticado.save({ transaction: t });
+
+        await t.commit();
+        return res.json({
+          message: "Propuesta rechazada. Reabierta en el panel de control y conductora liberada.",
+          solicitud,
+        });
+      }
+    } catch (error) {
+      await t.rollback();
+      console.error("Error exacto en responderPropuesta:", error);
+      return res.status(500).json({ error: error.message });
     }
-  } catch (error) {
-    await t.rollback();
-    console.error("Error exacto en responderPropuesta:", error);
-    return res.status(500).json({ error: error.message });
-  }
-},
+  },
 
   obtenerResumenDiarioConductora: async (req, res) => {
     try {
@@ -526,8 +522,105 @@ const transaccionesController = {
       console.error("Error en obtenerResumenDiarioConductora:", error);
       return res.status(500).json({ error: error.message });
     }
-  }
+  },
   
+  confirmarPagoEfectivo: async (req, res) => {
+    try {
+      const { idViaje } = req.body;
+        
+      const viaje = await Viaje.findByPk(idViaje);
+      if (!viaje) return res.status(404).json({ error: "Viaje no encontrado" });
+
+      viaje.metodoPago = 'Efectivo';
+      viaje.estadoPago = 'Aprobado';
+      await viaje.save();
+
+      await Usuario.update(
+        { disponible: true },
+        { where: { idUsuario: viaje.idConductora } }
+      );
+
+      return res.json({ message: "Pago en efectivo registrado y viaje cerrado", viaje });
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  },
+
+  confirmarPagoMercadoPago: async (req, res) => {
+    const t = await sequelize.transaction();
+    try {
+      const { idViaje, paymentId } = req.body;
+
+      const viaje = await Viaje.findByPk(idViaje, { transaction: t });
+      if (!viaje) {
+        await t.rollback();
+        return res.status(404).json({ error: "Viaje no encontrado" });
+      }
+
+      if (viaje.estadoPago === 'Aprobado') {
+        await t.rollback();
+        return res.json({ message: "El pago ya había sido procesado previamente", viaje });
+      }
+
+      viaje.metodoPago = 'MercadoPago';
+      viaje.estadoPago = 'Aprobado';
+      viaje.mercadopagoPaymentId = paymentId;
+      await viaje.save({ transaction: t });
+
+      const conductora = await Usuario.findByPk(viaje.idConductora, { transaction: t });
+      if (conductora) {
+        const saldoActual = parseFloat(conductora.saldoAcumulado || 0);
+        const nuevoMonto = parseFloat(viaje.monto || 0);
+        
+        conductora.saldoAcumulado = parseFloat((saldoActual + nuevoMonto).toFixed(2));
+        conductora.disponible = true;
+        await conductora.save({ transaction: t });
+      }
+
+      await t.commit();
+      return res.json({ message: "Pago de Mercado Pago acreditado con éxito en su billetera", viaje });
+    } catch (error) {
+      await t.rollback();
+      return res.status(500).json({ error: error.message });
+    }
+  },
+
+  // GET /api/transaccion/viajes/:id/detalle-completo
+  obtenerDetalleViajeCompleto: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const Vehiculo = require("../models/vehiculo.model");
+
+      const viaje = await Viaje.findByPk(id, {
+        include: [
+          {
+            model: Vehiculo,
+            as: 'vehiculo'
+          },
+          {
+            model: Usuario,
+            as: 'pasajera',
+            attributes: { exclude: ['contrasenia'] }
+          },
+          {
+            model: Usuario,
+            as: 'conductora',
+            attributes: { exclude: ['contrasenia'] }
+          },
+          {
+            model: SolicitudViaje,
+            as: 'solicitud'
+          }
+        ]
+      });
+
+      if (!viaje) return res.status(404).json({ error: "Viaje no encontrado" });
+      return res.json(viaje);
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+  },
+
 };
 
 module.exports = transaccionesController;
