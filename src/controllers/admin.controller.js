@@ -109,15 +109,6 @@ adminCtrl.evaluarRegistroPasajera = async (req, res) => {
       });
     }
 
-    // 5. FILTRO DE SEGURIDAD EXCLUSIVO: Validar identidad/género según tu especificación
-    const sexoValido = usuario.sexo.toLowerCase();
-    if (!sexoValido.includes("fem") && !sexoValido.includes("muj")) {
-      return res.status(403).json({
-        status: "0",
-        msg: "Filtro de seguridad rechazado: El sistema es exclusivo para mujeres y disidencias.",
-      });
-    }
-
     // 6. Modificar el atributo específico de la subclase Pasajera
     await usuario.update({ aprobadaPorAdmin: aprobar });
 
@@ -141,6 +132,28 @@ adminCtrl.evaluarRegistroPasajera = async (req, res) => {
       status: "0",
       msg: "Error al evaluar el registro de la pasajera",
       error: error.message,
+    });
+  }
+};
+// GET /api/admin/pasajeras
+adminCtrl.listarPasajeras = async (req, res) => {
+  try {
+    const pasajeras = await Usuario.findAll({
+      where: { rol: 1 },
+      attributes: ['idUsuario', 'nombre', 'telefono', 'email', 'nomUsuario', 'sexo', 'aprobadaPorAdmin', 'activo'],
+      order: [['nombre', 'ASC']]
+    });
+
+    res.status(200).json({
+      status: "1",
+      msg: "Lista de pasajeras recuperada con éxito",
+      data: pasajeras
+    });
+  } catch (error) {
+    res.status(400).json({
+      status: "0",
+      msg: "Error al listar las pasajeras",
+      error: error.message
     });
   }
 };
