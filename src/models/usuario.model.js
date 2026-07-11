@@ -99,6 +99,12 @@ const Usuario = sequelize.define('Usuario', {
     zonaActual: {
         type: DataTypes.STRING,
         allowNull: true // Se define cuando inicia la jornada
+    },
+    // Atributos de Conductora (Rol 2)
+    idVehiculoSolicitado: {
+        type: DataTypes.INTEGER,
+        allowNull: true, // Nulo por defecto, solo tiene valor si pide un cambio
+        defaultValue: null
     }
 }, {
     tableName: 'usuarios',

@@ -33,22 +33,34 @@ const cambiarEstadoLogicoVehiculo = async (req, res) => {
     vehiculo.activo = activo;
     await vehiculo.save();
 
+    // 🌟 Si el vehículo se desactiva, verificamos el impacto en la conductora
     if (!activo && vehiculo.idConductoraAsociada) {
-      const conductora = await Conductora.findByPk(vehiculo.idConductoraAsociada);
+      
+      // 🔮 CORRECCIÓN 1: Usamos 'Usuario' en lugar de 'Conductora'
+      const conductora = await Usuario.findByPk(vehiculo.idConductoraAsociada);
+      
       if (conductora && conductora.enJornada) {
-        conductora.enJornada = false;
-        conductora.disponible = false;
-        await conductora.save();
+        // La bajamos del viaje de forma segura
+        await conductora.update({
+          enJornada: false,
+          disponible: false
+        });
+        
+        // 🔮 CORRECCIÓN 2: Usamos 'idUsuario' que es tu clave real
         console.log(`[SISTEMA] Conductora ${conductora.idUsuario} deslogueada forzosamente por vehículo inactivo.`);
       }
     }
 
-    res.status(200).json({ message: `Estado del vehículo actualizado a: ${activo ? 'ACTIVO' : 'INACTIVO'}.`, vehiculo });
+    return res.status(200).json({ 
+      status: '1',
+      message: `Estado del vehículo actualizado a: ${activo ? 'ACTIVO' : 'INACTIVO'}.`, 
+      vehiculo 
+    });
+    
   } catch (error) {
-    res.status(500).json({ error: 'Error al cambiar estado lógico del vehículo.', details: error.message });
+    return res.status(500).json({ status: '0', error: 'Error al cambiar estado lógico del vehículo.', details: error.message });
   }
 };
-
 // PUT /api/admin/conductoras/aprobar-vehiculo
 const gestionarCambioVehiculo = async (req, res) => {
   try {
