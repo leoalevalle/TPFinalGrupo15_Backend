@@ -45,6 +45,12 @@ const Usuario = sequelize.define('Usuario', {
             notEmpty: { msg: 'La contraseña es requerida' }
         }
     },
+    loginGoogle: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
+
     activo: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
@@ -76,7 +82,7 @@ const Usuario = sequelize.define('Usuario', {
     aprobadaPorAdmin: {
         type: DataTypes.BOOLEAN,
         allowNull: true, // Debe permitir NULL porque operadoras y choferes no lo usan
-        defaultValue: false // Por defecto inicia sin aprobar hasta filtro de seguridad
+        defaultValue: false 
     },
 
     // Atributos de Conductora (Rol 2)
@@ -93,6 +99,12 @@ const Usuario = sequelize.define('Usuario', {
     zonaActual: {
         type: DataTypes.STRING,
         allowNull: true // Se define cuando inicia la jornada
+    },
+    // Atributos de Conductora (Rol 2)
+    idVehiculoSolicitado: {
+        type: DataTypes.INTEGER,
+        allowNull: true, // Nulo por defecto, solo tiene valor si pide un cambio
+        defaultValue: null
     }
 }, {
     tableName: 'usuarios',
@@ -115,5 +127,13 @@ const Usuario = sequelize.define('Usuario', {
         }
     }
 });
+
+// ====== RELACIONES DE ASOCIACIÓN ======
+const Vehiculo = require('./vehiculo.model'); 
+
+// Una Conductora (Usuario) tiene un Vehículo asignado
+Usuario.hasOne(Vehiculo, { foreignKey: 'idConductoraAsociada', as: 'vehiculo' });
+// Un Vehículo pertenece a una Conductora
+Vehiculo.belongsTo(Usuario, { foreignKey: 'idConductoraAsociada', as: 'conductora' });
 
 module.exports = Usuario;
